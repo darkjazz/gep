@@ -162,3 +162,41 @@ and(
 ~argindex = 1;
 ~tree=~addNext.(List.with(~gene.first))
 )
+
+
+
+	randInitValidChromosomes{
+		chromosomes = Array();
+		this.addChromosome;
+	}
+	
+	checkChromosome{|chrm|
+		var isValid = false;
+		try{
+			chrm.asUgenExpressionTree.asSynthDefString(\temp).interpret.add;
+			isValid = true
+		};
+		^isValid
+	}
+	
+	addChromosome{
+		var indv, chrm;
+		indv = Array();
+		numgenes.do({
+			indv = indv ++ Array.with(methods.choose) ++ Array.fill(headsize-1, {
+				[methods, terminals].choose.choose
+			});
+			indv = indv ++ Array.fill(tailsize, {
+				terminals.choose
+			})
+		});
+		chrm = ORF(indv, terminals, numgenes, linker );
+		if (this.checkChromosome(chrm)) {
+			chromosomes = chromosomes.add(chrm);
+		};
+		if (chromosomes.size < populationSize) {
+			this.addChromosome
+		}
+		
+	}
+

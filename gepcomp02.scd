@@ -5,35 +5,40 @@ s.loadDirectory("/Users/alo/Data/gep/synthdefs/");
 ~data = Array();
 
 "/Users/alo/Data/gep/metadata/*".pathMatch.collect(_.basename).collect({|name| name.split($.).first }).do({|name|
-	var data = UGExpressionTree.loadMetadata(name);
+	var data = UGenExpressionTree.loadMetadata(name);
 	if (data.stats.mfcc.collect(_.mean).sum.isNaN.not) {
-		if (data.stats.mfcc.size == 13) {
+		if (data.stats.mfcc.size == 20) {
 			~data = ~data.add( data );
 			~defnames = ~defnames.add( name );	
 		}
 	}
 });
 
-~vectors = ~data.collect(_.stats).collect({|stat| stat.mfcc.collect({|mfc| [mfc.mean, mfc.stdDev] }).flop.flat });
+~vectors = ~data.collect(_.stats).collect({|stat| stat.mfcc.collect({|mfc| [mfc.mean, mfc.stdDev] }).flat });
 
-~nclusters = 8;
+~nclusters = 32;
 
 ~kmeans = KMeans(~nclusters);
 
-~vectors.do({|vec|  ~kmeans.add(vec) });
+~vectors.do({|vec| 
+	~kmeans.add(vec)
+});
 
-~nclusters.do({|i| ~kmeans.assignments.occurrencesOf(i).postln });
+~nclusters.do({|i|
+	~kmeans.assignments.occurrencesOf(i).postln;
+});
 
 ~kmeans.update
 
 )
+
 
 (
 
 SynthDef(\proc, {|in|
 	var input, sig;
 	input = In.ar(in, 2);
-	sig = Limiter.ar( LeakDC.ar(input) );
+	sig = Limiter.ar( LeakDC.ar(input), 0.95 );
 	Out.ar(0, sig)
 }).add;
 
@@ -41,8 +46,8 @@ SynthDef(\proc, {|in|
 
 if (~record) { s.record };
 
-~totaldur = 256;
-~density = 2;
+~totaldur = 512;
+~density = 4;
 
 ~sectiondur = ~totaldur / (~nclusters * ~density.reciprocal);
 
@@ -69,7 +74,7 @@ Routine({
 				})
 			}).play
 		});
-		~sectiondur.wait
+		(~sectiondur + rrand(1, 4)).wait
 	});
 	1.wait;
 	proc.free;

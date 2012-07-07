@@ -299,7 +299,7 @@ Routine({
 		s.sync;
 		if (save) {
 			savename = ~gep.makeDefName(ind);
-			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.stats[def.name.asSymbol]);
+			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.asEvents(def.name.asSymbol));
 			~gep.saveData(ind, savename)
 		}
 	})

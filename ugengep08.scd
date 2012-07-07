@@ -6,11 +6,11 @@
 
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 7;
+~headsize = 9;
 ~numgenes = 4;
-~populationSize = 200;
+~populationSize = 60;
 
-~ugens = [LFTri, LFCub, LFPar, LFSaw, SinOsc, Pulse, LFNoise1, LFNoise2, LFNoise0, FSinOsc, SyncSaw, SinOscFB, GaussTrig, SawDPW, Dust2, PinkNoise, BrownNoise, GrayNoise, ClipNoise, WhiteNoise, Crackle, Blip, Perlin3, StkPluck, Saw, SinTone, Impulse, PMOsc, Resonz, BPF, HPF, LPF];
+~ugens = [LFTri, LFCub, LFPar, LFSaw, SinOsc, Pulse, LFNoise1, LFNoise2, LFNoise0, FSinOsc, SyncSaw, SinOscFB, GaussTrig, SawDPW, Dust2, PinkNoise, BrownNoise, GrayNoise, ClipNoise, WhiteNoise, Crackle, Blip, Perlin3, StkPluck, Saw, SinTone, Impulse, PMOsc, Resonz, BPF, HPF, LPF, RHPF, RLPF, Slope, OnePole];
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -117,6 +117,7 @@ Routine({
 ~targetAnalyzer.stats[\targetBuf].amp.stdDev;
 
 ~targetAnalyzer.stats[\targetBuf].err.mean
+
 
 
 (
@@ -250,13 +251,13 @@ Routine({
 
 [~gep.meanScore, ~gep.maxScore].postln
 
-~gep.chromosomes.collect(_.score).select({|sc| sc > 8.0 }).size
+~gep.chromosomes.collect(_.score).select({|sc| sc > 7.0 }).size
 
 (
 Routine({
-	var fragdur = 2;
+	var fragdur = 3;
 	~defs.do({|def, i|
-		if (~gep.at(i).score > 8.0) {
+		if (~gep.at(i).score > 7.0) {
 			var synth, args;
 			Post << "-------------  START " << def.name << " --------------" << Char.nl;
 			~gep.at(i).asUgenExpressionTree.asSynthDefString(def.name.asSymbol, Pan2, Normalizer).postln;
@@ -280,7 +281,7 @@ var save = true;
 
 Routine({
 	var fragdur = 5, indices;
-	indices = [41, 48, 102];
+	indices = [35];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et;
 		def = ~defs[ind];
@@ -297,7 +298,7 @@ Routine({
 		s.sync;
 		if (save) {
 			savename = ~gep.makeDefName(ind);
-			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.stats[def.name.asSymbol]);
+			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.asEvents(def.name.asSymbol));
 			~gep.saveData(ind, savename)
 		}
 	})

@@ -4,11 +4,13 @@
 
 // UGENS
 
-~headsize = 7;
+~ncoef = 20;
+~rate = 20;
+~headsize = 8;
 ~numgenes = 4;
-~populationSize = 100;
+~populationSize = 128;
 
-~ugens = [LFTri, LFCub, LFPar, LFSaw, SinOsc, Pulse, LFNoise1, LFDNoise0, LFNoise2, LFNoise0, FSinOsc, SyncSaw, SinOscFB, GaussTrig, SawDPW, Dust, Dust2, PinkNoise, BrownNoise, GrayNoise, ClipNoise, WhiteNoise, Crackle, Blip, Perlin3, StkPluck, Saw, SinTone, Impulse, Resonz, BPF, HPF, LPF];
+~ugens = [LFSaw, LFGauss, LFPulse, VarSaw, SinOsc, Pulse, PinkNoise, LFTri, LFNoise0, LFNoise1, LFNoise2, Blip, PMOsc, OnePole, TwoPole, Resonz];
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -23,11 +25,11 @@
 	(97 + i).asAscii.asSymbol
 });
 
-~gep = UGEP(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
+~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
 	AbstractFunction.methods.select({|meth| meth.name == '*' }).first
 );
 
-~gep.mutationRate = 0.1;
+~gep.mutationRate = 0.3;
 ~gep.recombinationRate = 0.5;
 ~gep.transpositionRate = 0.1;
 ~gep.rootTranspositionRate = 0.1;
@@ -56,8 +58,8 @@
 	orf.addExtraDomain(Array.with(~maps.choose))
 });
 
-~paramgep.mutationRate = 0.1;
-~paramgep.recombinationRate = 0.3;
+~paramgep.mutationRate = 0.3;
+~paramgep.recombinationRate = 0.5;
 ~paramgep.transpositionRate = 0.1;
 ~paramgep.rootTranspositionRate = 0.1;
 ~paramgep.geneRecombinationRate = 0.1;
@@ -72,7 +74,8 @@
 ~targetAnalyzer = UGepAnalyzer(
 	SynthDef(\targetBuf, {|out, buf|
 		Out.ar(out, PlayBuf.ar(1, buf, BufRateScale.kr(buf), doneAction: 2))
-	}).add
+	}).add, 
+	~ncoef
 );
 
 Routine({
@@ -81,7 +84,7 @@ Routine({
 	
 	~targetAnalyzer.currentDef = \targetBuf;
 	
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/fxchck.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/gepzone00.aif");
 	
 	s.sync;
 	
@@ -92,7 +95,7 @@ Routine({
 	}, '/n_end', s.addr).oneShot;
 
 	
-	~targetAnalyzer.run;
+	~targetAnalyzer.run(rate: ~rate);
 		
 	Synth.before(~targetAnalyzer.synth, \targetBuf, [\out, ~targetAnalyzer.bus, \buf, ~targetBuffer]);
 
@@ -147,7 +150,7 @@ Routine({
 	Routine({
 		var fragdur=3;
 		
-		~gepAnalyzer = UGepAnalyzer(~defs.select(_.notNil));
+		~gepAnalyzer = UGepAnalyzer(~defs.select(_.notNil), ~ncoef);
 		
 		s.sync;
 		
@@ -158,7 +161,7 @@ Routine({
 			
 				~gepAnalyzer.currentDef = def.name.asSymbol;
 				Post << "-------------  START " << def.name << " --------------" << Char.nl;
-				~gepAnalyzer.run;
+				~gepAnalyzer.run(rate: ~rate);
 				synth = Synth.before(~gepAnalyzer.synth, def.name, [\out, ~gepAnalyzer.bus] 
 					++ [~terminals, ~params[i]].lace(~terminals.size * 2));
 				fragdur.wait;
@@ -171,16 +174,15 @@ Routine({
 						score = 0;
 					} 
 					{
-						mean = mean + (1.0 - abs(stat.mean 
-							- ~targetAnalyzer.stats[\targetBuf].mfcc[i].mean).clip(0.0, 1.0));
-						stddev = stddev + (1.0 - abs(stat.stdDev 
-							- ~targetAnalyzer.stats[\targetBuf].mfcc[i].stdDev).clip(0.0, 1.0));
+						score = score + ((1.0 - abs(stat.mean 
+							- ~targetAnalyzer.stats[\targetBuf].mfcc[i].mean).clip(0.0, 1.0)) 
+							* ~ncoef.reciprocal * 2);
+						
+						score = score + ((1.0 - abs(stat.stdDev 
+							- ~targetAnalyzer.stats[\targetBuf].mfcc[i].stdDev).clip(0.0, 1.0))
+							* ~ncoef.reciprocal * 2);
 					};
 				});
-				["mfcc", mean/13, stddev/13].postln;
-				score = score + (mean/13);
-				score = score + (stddev/13);
-				["flatness", ev[\flat].mean, ev[\flat].stdDev].postln;
 				if ((ev[\flat].mean.isNaN).or(ev[\flat].stdDev.isNaN)) {
 					score = 0
 				}
@@ -190,7 +192,7 @@ Routine({
 					score = score + (1.0 - abs(ev[\flat].stdDev 
 						- ~targetAnalyzer.stats[\targetBuf].flat.stdDev));
 				};
-				["centroid", ev[\cent].mean, ev[\cent].stdDev].postln;
+//				["centroid", ev[\cent].mean, ev[\cent].stdDev].postln;
 				if ((ev[\cent].mean.isNaN).or(ev[\cent].stdDev.isNaN)) {
 					score = 0
 				}
@@ -200,7 +202,7 @@ Routine({
 					score = score + (1.0 - ControlSpec.specs['midfreq'].unmap(abs(ev[\cent].stdDev 
 						- ~targetAnalyzer.stats[\targetBuf].cent.stdDev)));
 				};
-				["amp", ev[\amp].mean, ev[\amp].stdDev].postln;
+//				["amp", ev[\amp].mean, ev[\amp].stdDev].postln;
 				if ((ev[\amp].mean.isNaN).or(ev[\amp].stdDev.isNaN)) {
 					score = 0
 				}{
@@ -214,17 +216,24 @@ Routine({
 							- ~targetAnalyzer.stats[\targetBuf][\amp].stdDev));
 					}				
 				};
-				["error", ev[\err].mean, ev[\err].stdDev].postln;
+//				["error", ev[\err].mean, ev[\err].stdDev].postln;
 				if (ev[\err].mean > 0) { score = 0 };
+				if (score < 0) { score = 0 };
 				~gep.at(i).score = score.round(0.01);
 				~paramgep.at(i).score = score.round(0.01);
+				[ev[\amp].mean, ev[\amp].stdDev, ev[\flat].mean, ev[\flat].stdDev, 
+					ev[\cent].mean, ev[\cent].stdDev
+				].postln;
 			}
 			{
 				~gep.at(i).score = 0
-			}
+			};
+			score.postln;
 		});
 		~gepAnalyzer.clear;
 		Post << " ------- analysis finished ------- " << Char.nl;
+		[~gep.meanScore, ~gep.maxScore].postln;
+		~gep.chromosomes.collect(_.score).postln;
 	}).play
 })
 
@@ -245,20 +254,14 @@ Routine({
 
 ~gep.chromosomes.collect(_.score)
 
-[ 4.7445, 6.62 ]
-[ 5.1897, 6.96 ]
-[ 3.8347, 6.56 ]
-[ 4.9215, 6.58 ]
-[ 5.9881, 6.42 ]
-[ 5.5798, 6.5 ]
-[ 5.7388, 6.49 ]
+~gep.chromosomes.selectIndices({|chr| chr.score > 8.5 })
 
 
 (
 Routine({
-	var fragdur = 5;
+	var fragdur = 3;
 	~defs.do({|def, i|
-		if (~gep.at(i).score > 4) {
+		if (~gep.at(i).score > 8.5) {
 			var synth, args;
 			Post << "-------------  START " << def.name << " --------------" << Char.nl;
 			~gep.at(i).asUgenExpressionTree.asSynthDefString(def.name.asSymbol, Pan2, Normalizer).postln;
@@ -282,7 +285,7 @@ var save = true;
 
 Routine({
 	var fragdur = 5, indices;
-	indices = [4, 17, 18, 28, 81, 97];
+	indices = [];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et;
 		def = ~defs[ind];

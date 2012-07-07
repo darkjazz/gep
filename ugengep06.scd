@@ -7,9 +7,9 @@
 ~ncoef = 20;
 ~headsize = 7;
 ~numgenes = 4;
-~populationSize = 100;
+~populationSize = 128;
 
-~ugens = [LFTri, LFCub, LFPar, LFSaw, SinOsc, Pulse, LFNoise1, LFDNoise0, LFNoise2, LFNoise0, FSinOsc, SyncSaw, SinOscFB, GaussTrig, SawDPW, Dust, Dust2, PinkNoise, BrownNoise, GrayNoise, ClipNoise, WhiteNoise, Crackle, Blip, Perlin3, StkPluck, Saw, SinTone, Impulse, Resonz, BPF, HPF, LPF];
+~ugens = [LFTri, LFCub, LFPar, LFSaw, SinOsc, Pulse, LFNoise1, LFDNoise0, LFNoise2, LFNoise0, FSinOsc, SyncSaw, SinOscFB, GaussTrig, SawDPW, Dust, Dust2, PinkNoise, BrownNoise, GrayNoise, ClipNoise, WhiteNoise, Crackle, Blip, Perlin3, StkPluck, Saw, SinTone, Impulse, PMOsc, Resonz, BPF, HPF, LPF];
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -24,7 +24,7 @@
 	(97 + i).asAscii.asSymbol
 });
 
-~gep = UGEP(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
+~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
 	AbstractFunction.methods.select({|meth| meth.name == '*' }).first
 );
 
@@ -230,7 +230,7 @@ Routine({
 		~gepAnalyzer.clear;
 		Post << " ------- analysis finished ------- " << Char.nl;
 		[~gep.meanScore, ~gep.maxScore].postln;
-		~gep.chromosomes.collect(_.score)
+		~gep.chromosomes.collect(_.score).postln;
 	}).play
 })
 
@@ -254,7 +254,7 @@ Routine({
 
 (
 Routine({
-	var fragdur = 5;
+	var fragdur = 3;
 	~defs.do({|def, i|
 		if (~gep.at(i).score > 4) {
 			var synth, args;
@@ -280,7 +280,7 @@ var save = true;
 
 Routine({
 	var fragdur = 5, indices;
-	indices = [2, 10, 11, 12, 17, 28, 36, 41, 43, 44, 51, 59, 80, 86];
+	indices = [1, 8, 26, 32];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et;
 		def = ~defs[ind];
@@ -297,7 +297,7 @@ Routine({
 		s.sync;
 		if (save) {
 			savename = ~gep.makeDefName(ind);
-			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.stats[def.name.asSymbol]);
+			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.asEvents(def.name.asSymbol));
 			~gep.saveData(ind, savename)
 		}
 	})
