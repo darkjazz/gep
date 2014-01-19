@@ -45,23 +45,23 @@
 	ControlSpec.specs[name]
 });
 
-~paramgep.chromosomes.do({|orf| 
-	orf.fillConstants(~paramterminals.size, { rrand(0.0, 1.0) }); 
-	orf.addExtraDomain(Array.with(~maps.choose))
+~paramgep.chromosomes.do({|chrom| 
+	chrom.fillConstants(~paramterminals.size, { rrand(0.0, 1.0) }); 
+	chrom.addExtraDomain(Array.with(~maps.choose))
 })
 
 )
 
 (
-var index, spec, args, orf, defstr;
+var index, spec, args, chrom, defstr;
 index = 26;
 ~defname = "test_" ++ (index.asString.padLeft(2, "0"));
 
 defstr = ~gep.at(index).asExpressionTree.asSynthDefString(~defname).postln;
 defstr.interpret.add;
-orf = ~paramgep.at(index);
-spec = orf.extraDomains.first.first.asString.drop(2);
-~args = orf.asExpressionTree(false).asFunctionString(true).replace("map", spec ++ ".map").interpret.value(*orf.constants);
+chrom = ~paramgep.at(index);
+spec = chrom.extraDomains.first.first.asString.drop(2);
+~args = chrom.asExpressionTree(false).asFunctionString(true).replace("map", spec ++ ".map").interpret.value(*chrom.constants);
 
 )
 
@@ -69,18 +69,18 @@ z=Synth(~defname, [~terminals, ~args].lace(~terminals.size * 2))
 
 z.free
 
-~paramgep.chromosomes.do({|orf| 
+~paramgep.chromosomes.do({|chrom| 
 	var str, funcstr;
-	str = orf.extraDomains.first.first.asString.drop(2);
-	funcstr = orf.asExpressionTree(false).asFunctionString(true);
+	str = chrom.extraDomains.first.first.asString.drop(2);
+	funcstr = chrom.asExpressionTree(false).asFunctionString(true);
 	funcstr.postln;
-	funcstr.replace("map", str ++ ".map").interpret.value(*orf.constants).postln;
+	funcstr.replace("map", str ++ ".map").interpret.value(*chrom.constants).postln;
 	"-----------------".postln
 })
 
 ~paramgep.at(0).asExpressionTree(false).asFunctionString(true).replace("map", ~maps.choose.asString.drop(2) ++ ".map").interpret.value(0.3, 0.6)
 
-~paramgep.chromosomes.do({|orf| orf.asSymbols.postln  })
+~paramgep.chromosomes.do({|chrom| chrom.asSymbols.postln  })
 
 ~paramgep.at(0).asSymbols.clump(~paramgep.geneSize).do(_.postln)
 

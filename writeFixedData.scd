@@ -45,9 +45,9 @@
 
 ~item = ~data[\gep_gen003_069120524_211011120524_211011];
 
-~orf = ORF(~item.code, ~item.terminals, ~item.header.numgenes, ~item.linker)
+~chrom = GEPChromosome(~item.code, ~item.terminals, ~item.header.numgenes, ~item.linker)
 
-~orf.asUgenExpressionTree.asSynthDefString(\gep_gen003_069120524_211011120524_211011, Pan2, Normalizer)
+~chrom.asUgenExpressionTree.asSynthDefString(\gep_gen003_069120524_211011120524_211011, Pan2, Normalizer)
 
 ~metadata[\gep_gen003_069120524_211011120524_211011].args
 

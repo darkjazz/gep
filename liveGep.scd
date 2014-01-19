@@ -1,33 +1,14 @@
-// GEP with a target sound analysis, voice as target
-
 (
-
-// UGENS
-
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 8;
+~headsize = 7;
 ~numgenes = 4;
-~populationSize = 128;
+~populationSize = 32;
 
-~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, SawDPW, Dust2, PinkNoise, BrownNoise, ClipNoise, Crackle, Blip, Saw, Impulse, PMOsc, Resonz, BPF, HPF, LPF];
+~excludeUGenList = [GaussTrig, BPF, HPF, LPF, OnePole, TwoPole, RHPF, RLPF, Resonz];
+~linker = AbstractFunction.methods.select({|meth| meth.name == '*' }).first;
 
-~methods = ~ugens.collect({|ugen| 
-	var ar;
-	ar = ugen.class.methods.select({|mth| mth.name == 'ar' }).first;
-	if (ar.isNil) {
-		ar = ugen.superclass.class.methods.select({|mth| mth.name == 'ar' }).first
-	};
-	ar
-});
-
-~terminals = (~methods.collect(_.argNames).collect(_.size).maxItem + ~headsize).collect({|i|
-	(97 + i).asAscii.asSymbol
-});
-
-~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
-	AbstractFunction.methods.select({|meth| meth.name == '+' }).first
-);
+~gep = UGEP.newRandomFromLibrary(~populationSize, ~numgenes, ~headsize, ~linker, ~excludeUGenList);
 
 ~gep.mutationRate = 0.3;
 ~gep.recombinationRate = 0.5;
@@ -36,9 +17,8 @@
 ~gep.geneRecombinationRate = 0.1;
 ~gep.geneTranspositionRate = 0.1;
 
-
-~paramheadsize = 5;
-~paramnumgenes = ~terminals.size;
+~paramheadsize = 3;
+~paramnumgenes = ~gep.terminals.size;
 ~paramterminals = ['w', 'x', 'y', 'z'];
 
 ~paramethods = ['*', '-', '+', '/'].collect({|opname|
@@ -58,70 +38,69 @@
 	chrom.addExtraDomain(Array.with(~maps.choose))
 });
 
-~paramgep.mutationRate = 0.25;
-~paramgep.recombinationRate = 1.0;
-~paramgep.transpositionRate = 0.25;
+~paramgep.mutationRate = 0.3;
+~paramgep.recombinationRate = 0.5;
+~paramgep.transpositionRate = 0.1;
 ~paramgep.rootTranspositionRate = 0.1;
 ~paramgep.geneRecombinationRate = 0.1;
 ~paramgep.geneTranspositionRate = 0.1;
-
 
 )
 
 (
 // create target statistics
 
-~targetAnalyzer = UGepAnalyzer(
+~gepAnalyzer = UGepAnalyzer(
 	SynthDef(\targetBuf, {|out, buf|
 		Out.ar(out, PlayBuf.ar(1, buf, BufRateScale.kr(buf), doneAction: 2))
 	}).add, 
 	~ncoef
 );
 
-Routine({
+~resetInterval = 10;
 
+~statrout = Routine({
+	
+	~postStats = {
+		Post << "MFCC" << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].mfcc.collect(_.mean) << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].mfcc.collect(_.stdDev) << Char.nl;
+		Post << "Flatness" << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].flat.mean << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].flat.stdDev << Char.nl;
+		Post << "Centroid" << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].cent.mean << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].cent.stdDev << Char.nl;
+		Post << "Amplitude" << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].amp.mean << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].amp.stdDev << Char.nl;
+		Post << "Error" << Char.nl;
+		Post << ~gepAnalyzer.stats[\targetBuf].err.mean << Char.nl;
+		Post << "Count: " << ~gepAnalyzer.stats[\targetBuf].amp.count << Char.nl
+	};	
+	
 	s.sync;
 	
-	~targetAnalyzer.currentDef = \targetBuf;
+	~gepAnalyzer.currentDef = \targetBuf;
 	
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/gepvoice.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/input/shellylivecode.aiff");
 	
 	s.sync;
 	
-	OSCFunc({|msg|
-		~targetAnalyzer.freeSynth;
- 		~targetAnalyzer.clear;
- 		"resources freed...".postln;
-	}, '/n_end', s.addr).oneShot;
-
-	
-	~targetAnalyzer.run(rate: ~rate);
+	~gepAnalyzer.run(rate: ~rate);
 		
-	Synth.before(~targetAnalyzer.synth, \targetBuf, [\out, ~targetAnalyzer.bus, \buf, ~targetBuffer]);
+	~targetBufSynth = Synth.before(~gepAnalyzer.synth, \targetBuf, [\out, ~gepAnalyzer.bus, \buf, ~targetBuffer]);
+	
+	loop({
+		~gepAnalyzer.resetStats;
+		~resetInterval.wait;
+		~postStats.();
+	})
 
 }).play;
 
 )
 
-
-~targetAnalyzer.stats[\targetBuf].mfcc.collect(_.mean)
-~targetAnalyzer.stats[\targetBuf].mfcc.collect(_.stdDev)
-
-~targetAnalyzer.stats[\targetBuf].flat.mean;
-~targetAnalyzer.stats[\targetBuf].flat.stdDev;
-
-~targetAnalyzer.stats[\targetBuf].cent.mean;
-~targetAnalyzer.stats[\targetBuf].cent.stdDev;
-
-~targetAnalyzer.stats[\targetBuf].amp.mean;
-~targetAnalyzer.stats[\targetBuf].amp.stdDev;
-
-~targetAnalyzer.stats[\targetBuf].err.mean
-
-
-
-(
-// fitness function based on target
 
 ~gep.addFitnessFunc({
 	
@@ -141,7 +120,6 @@ Routine({
 			nil	
 		})
 	});
-
 	~params = ~paramgep.chromosomes.collect({|chrom, i|
 		var spec;
 		spec = chrom.extraDomains.first.first.asString.drop(2);
@@ -239,72 +217,28 @@ Routine({
 	}).play
 })
 
-)
 
-
-// run first time
-~gep.updateScores
-
-
-(
-// for each next generation
-~paramgep.nextGeneration;
-~gep.nextGeneration;
-)
-
-[~gep.meanScore, ~gep.maxScore].postln
-
-~gep.chromosomes.collect(_.score).select({|sc| sc > 8.2 })
-
-(
-Routine({
-	var fragdur = 3;
-	~defs.do({|def, i|
-		if (~gep.at(i).score > 8.2) {
-			var synth, args;
-			Post << "-------------  START " << def.name << " --------------" << Char.nl;
-			~gep.at(i).asUgenExpressionTree.asSynthDefString(def.name.asSymbol, Pan2, Normalizer).postln;
-			args =  [~terminals, ~params[i]].lace(~terminals.size * 2).postln;
-			Post << "SCORE: " << ~gep.at(i).score << Char.nl;
-			synth = Synth(def.name, args);
-			s.sync;
-			fragdur.wait;
-			synth.free;
-			synth = nil;
-			s.sync
-		}
+~usedefs = Array();
+~defs = ~gep.chromosomes.collect({|chrom, i|
+	var defname, defstr;
+	defname = ("gep_gen" ++ ~gep.generationCount.asString.padLeft(3, "0") 
+		++ "_" ++ i.asString.padLeft(3, "0")).asSymbol;
+	defstr = chrom.asUgenExpressionTree.asSynthDefString(defname, Pan2, Normalizer);
+	{
+		defstr.interpret.add
+	}.try({
+		chrom.score = -1;
+		nil	
 	})
-}).play
-)
+});
 
+~statrout.stop
 
-(
+s.queryAllNodes
 
-var save = true;
+~targetAnalyzer.freeSynth
+~targetAnalyzer.clear
 
-Routine({
-	var fragdur = 5, indices;
-	indices = [68];
-	indices.do({|ind, i|
-		var synth, args, def, savename, et;
-		def = ~defs[ind];
-		Post << "-------------  START " << def.name << " --------------" << Char.nl;
-		et = ~gep.at(ind).asUgenExpressionTree;
-		et.asSynthDefString(def.name.asSymbol, Pan2, Normalizer).postln;
-		args =  [~terminals, ~params[ind]].lace(~terminals.size * 2).postln;
-		Post << "SCORE: " << ~gep.at(ind).score << Char.nl;
-		synth = Synth(def.name, args);
-		s.sync;
-		fragdur.wait;
-		synth.free;
-		synth = nil;
-		s.sync;
-		if (save) {
-			savename = ~gep.makeDefName(ind);
-			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.asEvents(def.name.asSymbol));
-			~gep.saveData(ind, savename)
-		}
-	})
-}).play
+~targetBufSynth.free;
 
-)
+s.reboot

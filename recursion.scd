@@ -79,7 +79,7 @@ and(
 
 ~gene = ~code.clump(~gep.geneSize).first
 
-~gene = ~gep.maxScoreORFs.first.code.clump(~gep.geneSize).first
+~gene = ~gep.maxScoreGEPChromosomes.first.code.clump(~gep.geneSize).first
 
 ~gene = ~gep.at(1).code.clump(~gep.geneSize).first
 
@@ -190,7 +190,7 @@ and(
 				terminals.choose
 			})
 		});
-		chrm = ORF(indv, terminals, numgenes, linker );
+		chrm = GEPChromosome(indv, terminals, numgenes, linker );
 		if (this.checkChromosome(chrm)) {
 			chromosomes = chromosomes.add(chrm);
 		};

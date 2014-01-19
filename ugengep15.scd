@@ -1,4 +1,4 @@
-// GEP with a target sound analysis, voice as target
+// GEP with a target sound analysis, congotronics as target
 
 (
 
@@ -6,11 +6,13 @@
 
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 8;
+~headsize = 16;
 ~numgenes = 4;
-~populationSize = 128;
+~populationSize = 256;
 
-~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, SawDPW, Dust2, PinkNoise, BrownNoise, ClipNoise, Crackle, Blip, Saw, Impulse, PMOsc, Resonz, BPF, HPF, LPF];
+~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, SawDPW, Dust2, Crackle, Blip, Saw, PMOsc, Resonz, BPF, HPF, LPF, DelayL, CombL, CombN, CombC, Logist0, CML0, QuadL, CuspL, GbmanL, HenonL, StandardL, Spring, Ball, Pluck, LFClipNoise, LFDNoise0, LFDNoise1, SinGrain, FMGrain, InGrain];
+
+~forceArgs = ('maxdelaytime': 1.0);
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -26,14 +28,14 @@
 });
 
 ~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
-	AbstractFunction.methods.select({|meth| meth.name == '+' }).first
+	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, ~forceArgs
 );
 
 ~gep.mutationRate = 0.3;
 ~gep.recombinationRate = 0.5;
-~gep.transpositionRate = 0.1;
-~gep.rootTranspositionRate = 0.1;
-~gep.geneRecombinationRate = 0.1;
+~gep.transpositionRate = 0.2;
+~gep.rootTranspositionRate = 0.3;
+~gep.geneRecombinationRate = 0.25;
 ~gep.geneTranspositionRate = 0.1;
 
 
@@ -68,12 +70,13 @@
 
 )
 
+
 (
 // create target statistics
 
 ~targetAnalyzer = UGepAnalyzer(
 	SynthDef(\targetBuf, {|out, buf|
-		Out.ar(out, PlayBuf.ar(1, buf, BufRateScale.kr(buf), doneAction: 2))
+		Out.ar(out, Mix(PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2)))
 	}).add, 
 	~ncoef
 );
@@ -84,7 +87,7 @@ Routine({
 	
 	~targetAnalyzer.currentDef = \targetBuf;
 	
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/gepvoice.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/ctronics.aif");
 	
 	s.sync;
 	
@@ -206,10 +209,10 @@ Routine({
 				};
 //				["amp", ev[\amp].mean, ev[\amp].stdDev].postln;
 				if ((ev[\amp].mean.isNaN).or(ev[\amp].stdDev.isNaN)) {
-					score = 0
+					score = 0;
 				}{
 					if (ev[\amp].mean > 1.0) {
-						score = 0 
+						score = score * ev[\amp].mean.reciprocal; 
 					}
 					{
 						score = score + (1.0 - abs(ev[\amp].mean 
@@ -252,15 +255,19 @@ Routine({
 ~gep.nextGeneration;
 )
 
-[~gep.meanScore, ~gep.maxScore].postln
+[~gep.meanScore, ~gep.maxScore]
+[~gep.meanScore, ~gep.maxScore, ~gep.chromosomes.collect(_.score).stdDev].postln
 
-~gep.chromosomes.collect(_.score).select({|sc| sc > 8.2 })
+~th = 8.5;
+~gep.chromosomes.collect(_.score).select({|sc| sc > ~th })
+
+~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
 
 (
 Routine({
 	var fragdur = 3;
 	~defs.do({|def, i|
-		if (~gep.at(i).score > 8.2) {
+		if (~gep.at(i).score > ~th) {
 			var synth, args;
 			Post << "-------------  START " << def.name << " --------------" << Char.nl;
 			~gep.at(i).asUgenExpressionTree.asSynthDefString(def.name.asSymbol, Pan2, Normalizer).postln;
@@ -284,9 +291,9 @@ var save = true;
 
 Routine({
 	var fragdur = 5, indices;
-	indices = [68];
+	indices = [];
 	indices.do({|ind, i|
-		var synth, args, def, savename, et;
+		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];
 		Post << "-------------  START " << def.name << " --------------" << Char.nl;
 		et = ~gep.at(ind).asUgenExpressionTree;
@@ -300,11 +307,19 @@ Routine({
 		synth = nil;
 		s.sync;
 		if (save) {
+			co = ~paramgep.chromosomes[ind];
 			savename = ~gep.makeDefName(ind);
-			et.saveAsSynthDef(savename, Pan2, Normalizer, args, ~gepAnalyzer.asEvents(def.name.asSymbol));
-			~gep.saveData(ind, savename)
+			cospec = ('code': co.code, 'args': args, 'constants': co.constants, 'extraDomains': co.extraDomains, 'defname': savename);
+			et.saveAsSynthDef(savename, Pan2, Normalizer, cospec, ~gepAnalyzer.asEvents(def.name.asSymbol));
+			~gep.saveData(ind, savename);
 		}
 	})
 }).play
 
 )
+
+
+/*
+gep_gen008_024_130501_211817
+gep_gen008_057_130501_211838
+*/

@@ -24,8 +24,8 @@
 
 )
 
-~et = ~gep.chromosomes.collect({|orf|
-	orf.asUgenExpressionTree
+~et = ~gep.chromosomes.collect({|chrom|
+	chrom.asUgenExpressionTree
 });
 
 ~et.do({|et, i|
@@ -48,14 +48,14 @@
 
 ~asCharString.(~newcodes.last)
 
-~orfA = ORF(~newcodes.first, ~terminals, ~numgenes, AbstractFunction.methods.select({|meth| meth.name == '*' }).first)
+~chromA = GEPChromosome(~newcodes.first, ~terminals, ~numgenes, AbstractFunction.methods.select({|meth| meth.name == '*' }).first)
 
 
-~orfB = ORF(~newcodes.last, ~terminals, ~numgenes, AbstractFunction.methods.select({|meth| meth.name == '*' }).first)
+~chromB = GEPChromosome(~newcodes.last, ~terminals, ~numgenes, AbstractFunction.methods.select({|meth| meth.name == '*' }).first)
 
-~orfA.asUgenExpressionTree.asFunctionString
+~chromA.asUgenExpressionTree.asFunctionString
 
-~orfB.asUgenExpressionTree.asFunctionString
+~chromB.asUgenExpressionTree.asFunctionString
 
 
 ~asCharString = {|code|

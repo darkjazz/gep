@@ -9,12 +9,12 @@
 
 ~gep.chromosomes.first
 
-~gep.translateORF(0)
+~gep.translateGEPChromosomes(0)
 
 c = Array.fill(20, {
 	var indv;
-	indv = ORF.with(~methods.choose);
-	indv ++ ORF.fill(2, { [~methods, ~terminals].choose.choose });
+	indv = GEPChromosome.with(~methods.choose);
+	indv ++ GEPChromosome.fill(2, { [~methods, ~terminals].choose.choose });
 })
 
 o = ~gep.chromosomes[9]
@@ -44,25 +44,25 @@ o.collect({|it| if (it.isKindOf(Method)) { it.name } { it }  }).postln;
 
 
 (
-~addNext = {|orf, index=0, argindex=1|
+~addNext = {|chrom, index=0, argindex=1|
 	var str = "", indices;
-	if (orf[index].isKindOf(Method)) {
-		("adding method: " ++ orf[index].name.asString ++ " at index: " ++ index.asString).postln;
-		str = str + orf[index].name.asString ++ "( ";
-		indices = (argindex..argindex+orf[index].argNames.size-1); 
+	if (chrom[index].isKindOf(Method)) {
+		("adding method: " ++ chrom[index].name.asString ++ " at index: " ++ index.asString).postln;
+		str = str + chrom[index].name.asString ++ "( ";
+		indices = (argindex..argindex+chrom[index].argNames.size-1); 
 		argindex = argindex + indices.size;
 		[index, indices].postln;
 		indices.do({|ind, i|
-			("adding arg " ++ i.asString ++ " to method: " ++ orf[index].name.asString).postln;
-			str = str ++ ~addNext.(orf, ind, argindex + ~depth);
+			("adding arg " ++ i.asString ++ " to method: " ++ chrom[index].name.asString).postln;
+			str = str ++ ~addNext.(chrom, ind, argindex + ~depth);
 			if (i < indices.lastIndex) { str = str ++ ", " }
 		});		
 		str = str ++ " )";
 	}
 	{
 		~depth = ~depth + 1;
-		("adding terminal: " ++ orf[index].asString ++ " at index: " ++ index.asString).postln;
-		str = str ++ orf[index].asString
+		("adding terminal: " ++ chrom[index].asString ++ " at index: " ++ index.asString).postln;
+		str = str ++ chrom[index].asString
 	};
 	str
 }

@@ -23,9 +23,9 @@ g = {|a,b,c| or(  and( c,  or( a, b ) ),  and( b, a ) )}
 ~gep.tailsize
 
 (
-~gep.chromosomes.do({|orf|
+~gep.chromosomes.do({|chrom|
 	var score=0, ofnc;
-	ofnc = orf.translate.interpret;
+	ofnc = chrom.asExpressionTree.asFunctionString.interpret;
 	8.do({|i|
 		var args, ofunc;
 		args = i.asDigits(2,3).collect(_.booleanValue);
@@ -33,7 +33,7 @@ g = {|a,b,c| or(  and( c,  or( a, b ) ),  and( b, a ) )}
 			score = score + 1
 		}
 	});
-	orf.score = score
+	chrom.score = score
 })
 )
 

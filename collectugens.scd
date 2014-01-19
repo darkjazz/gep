@@ -1,5 +1,8 @@
 g=UGenGraphGEP()
 
+
+g.ugenCollection
+
 x=g.ugenCollection.collect({|ugen|  
 	var args;
 	if (ugen.class.methods.select({|mth| mth.name == 'ar' }).notNil) {

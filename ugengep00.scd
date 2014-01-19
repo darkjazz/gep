@@ -64,9 +64,9 @@ SynthDef(\analyze, {|in, rate|
 	ControlSpec.specs[name]
 });
 
-~paramgep.chromosomes.do({|orf| 
-	orf.fillConstants(~paramterminals.size, { rrand(0.0, 1.0) }); 
-	orf.addExtraDomain(Array.with(~maps.choose))
+~paramgep.chromosomes.do({|chrom| 
+	chrom.fillConstants(~paramterminals.size, { rrand(0.0, 1.0) }); 
+	chrom.addExtraDomain(Array.with(~maps.choose))
 });
 
 ~paramgep.mutationRate = 0.1;
@@ -85,18 +85,18 @@ SynthDef(\analyze, {|in, rate|
 
 ~gep.addFitnessFunc({
 	~deflib = ();
-	~defs = ~gep.chromosomes.collect({|orf, i|
+	~defs = ~gep.chromosomes.collect({|chrom, i|
 		var defname, defstr;
 		defname = ("gep_gen" ++ ~gep.generationCount.asString.padLeft(3, "0") 
 			++ "_" ++ i.asString.padLeft(3, "0")).asSymbol;
-		defstr = orf.asExpressionTree.asSynthDefString(defname);
+		defstr = chrom.asExpressionTree.asSynthDefString(defname);
 		defstr.interpret.add
 	});
-	~params = ~paramgep.chromosomes.collect({|orf, i|
+	~params = ~paramgep.chromosomes.collect({|chrom, i|
 		var spec;
-		spec = orf.extraDomains.first.first.asString.drop(2);
-		orf.asExpressionTree(false).asFunctionString
-			.replace("map", spec ++ ".map").interpret.value(*orf.constants)
+		spec = chrom.extraDomains.first.first.asString.drop(2);
+		chrom.asExpressionTree(false).asFunctionString
+			.replace("map", spec ++ ".map").interpret.value(*chrom.constants)
 	});
 	
 	~deflib = ();

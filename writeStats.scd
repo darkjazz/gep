@@ -32,9 +32,9 @@
 (
 
 ~defs = ~data.collect({|alldata, key|
-	var orf, def, tree;
-	orf = ORF(alldata.data.code, alldata.data.terminals, alldata.data.header.numgenes, alldata.data.linker);
-	tree = orf.asUgenExpressionTree;
+	var chrom, def, tree;
+	chrom = GEPChromosomes(alldata.data.code, alldata.data.terminals, alldata.data.header.numgenes, alldata.data.linker);
+	tree = chrom.asUgenExpressionTree;
 	def = tree.asSynthDefString(key, Pan2, Normalizer).interpret;	def
 });
 )
@@ -51,9 +51,9 @@ Routine({
 	s.sync;
 
 	~data.keysValuesDo({|key, alldata|
-		var def, synth, orf, tree;
-		orf = ORF(alldata.data.code, alldata.data.terminals, alldata.data.header.numgenes, alldata.data.linker);
-		tree = orf.asUgenExpressionTree;
+		var def, synth, chrom, tree;
+		chrom = GEPChromosomes(alldata.data.code, alldata.data.terminals, alldata.data.header.numgenes, alldata.data.linker);
+		tree = chrom.asUgenExpressionTree;
 		
 		def = ~defs[key].add;
 		

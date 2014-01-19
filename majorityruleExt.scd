@@ -1,7 +1,7 @@
 (
 ~headsize = 5;
 ~numgenes = 2;
-~populationSize = 100;
+~populationSize = 24;
 
 ~methods = True.methods.select({|meth| [\or, \and, \not].includes(meth.name)  });
 ~terminals = [\a, \b, \c];
@@ -12,9 +12,9 @@
 	majorityRule = {|a, b, c| 
 		if ([a, b, c].collect(_.binaryValue).sum > 1) { true } { false } 
 	};
-	chromosomes.do({|orf|
+	chromosomes.do({|chrom|
 		var score = 0, func;
-		func = orf.asExpressionTree(false).asFunctionString.interpret;
+		func = chrom.asExpressionTree(false).asFunctionString.interpret;
 		8.do({|i|
 			var args;
 			args = i.asDigits(2,3).collect(_.booleanValue);
@@ -22,7 +22,7 @@
 				score = score + 1
 			}
 		});
-		orf.score = score
+		chrom.score = score
 	})
 });
 
@@ -45,7 +45,7 @@
 	~gep.nextGeneration;
 	
 	if (~gep.maxScore == 8) {
-		~gep.maxScoreORFs.do({|orf| orf.asExpressionTree(false).asFunctionString.postln })
+		~gep.maxScoreGEPChromosomes.do({|chrom| chrom.asExpressionTree(false).asFunctionString.postln })
 	};
 	
 	[~gep.generationCount, ~gep.meanScore, ~gep.maxScore].postln
@@ -53,17 +53,17 @@
 })
 )
 
-~tree = ~gep.maxScoreORFs.first.asExpressionTree(false)
+~tree = ~gep.maxScoreGEPChromosomes.first.asExpressionTree(false)
 
-~gep.chromosomes.do({|orf| [orf.asExpressionTree(false).asFunctionString.size, orf.score].postln  })
+~gep.chromosomes.do({|chrom| [chrom.asExpressionTree(false).asFunctionString.size, chrom.score].postln  })
 
-~gep.chromosomes.do({|orf| orf.asExpressionTree(false).asFunctionString.postln  })
+~gep.chromosomes.do({|chrom| chrom.asExpressionTree(false).asFunctionString.postln  })
 
 ~gep.at(19).code
 
-~gep.maxScoreORFs.first.asExpressionTree(false).asFunctionString
+~gep.maxScoreGEPChromosomes.first.asExpressionTree(false).asFunctionString
 
-~tree = ExpressionTree(~gep.maxScoreORFs.last)
+~tree = ExpressionTree(~gep.maxScoreGEPChromosomes.last)
 
 ~tree.root
 
