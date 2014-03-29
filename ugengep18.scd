@@ -6,11 +6,11 @@
 
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 12;
-~numgenes = 2;
-~populationSize = 32;
+~headsize = 16;
+~numgenes = 4;
+~populationSize = 256;
 
-~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, SyncSaw, SawDPW, Crackle, LFNoise1, LFNoise2, LFNoise0, Dust2, Blip, Saw, PMOsc, BPF, HPF, LPF, Logist0, CML0, LFClipNoise, LFDNoise0, LFDNoise1];
+~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, LFNoise1, LFNoise2, LFNoise0, Blip, Saw, PMOsc];
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -72,7 +72,7 @@
 
 Routine({
 
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/frag44.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/dillinja01.aif");
 	
 	s.sync;
 
@@ -244,8 +244,9 @@ Routine({
 [~gep.meanScore, ~gep.maxScore]
 [~gep.meanScore, ~gep.maxScore, ~gep.chromosomes.collect(_.score).stdDev].postln
 
-~th = 6.5;
+~th = 7.6;
 ~gep.chromosomes.collect(_.score).select({|sc| sc > ~th })
+~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
 
 (~gep.chromosomes.collect(_.score).select({|sc| sc == 0 }).size / ~populationSize)
 
@@ -280,8 +281,8 @@ Routine({
 var save = true;
 
 Routine({
-	var fragdur = ~targetBuffer.duration, indices;
-	indices = [17, 19];
+	var fragdur = 5, indices;
+	indices = [20, 28, 37, 40, 52, 123, 125, 166, 173, 206, 209, 212, 219, 226, 231, 236, 240];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];

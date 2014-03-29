@@ -5,21 +5,22 @@
 (
 // create target statistics
 
-~targetAnalyzer = UGepTimeAnalyzer(
-	SynthDef(\targetBuf, {|out, buf|
-		Out.ar(out, Mix(PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2)))
-	}).add, 
-	~ncoef
-);
-
 Routine({
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/random.aif");
+	
+	s.sync;
 
+	~targetAnalyzer = UGepTimeAnalyzer(
+		SynthDef(\targetBuf, {|out, buf|
+			Out.ar(out, Mix(PlayBuf.ar(~targetBuffer.numChannels, buf, BufRateScale.kr(buf), doneAction: 2)))
+		}).add, 
+		~ncoef
+	);
+	
 	s.sync;
 	
 	~targetAnalyzer.currentDef = \targetBuf;
-	
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/random.aif");
-	
+		
 	s.sync;
 	
 	OSCFunc({|msg|
