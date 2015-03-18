@@ -1,16 +1,15 @@
 // GEP with a target time-based sound analysis for percussive sounds
 
 (
-
 // UGENS
 
 ~ncoef = 20;
 ~rate = 20;
 ~headsize = 12;
 ~numgenes = 2;
-~populationSize = 32;
+~populationSize = 64;
 
-~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, SyncSaw, SawDPW, Crackle, LFNoise1, LFNoise2, LFNoise0, Dust2, Blip, Saw, PMOsc, BPF, HPF, LPF, Logist0, CML0, LFClipNoise, LFDNoise0, LFDNoise1];
+~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Dust2, Crackle, Blip, Saw, PMOsc, Logist0, CML0, QuadL, CuspL, GbmanL, HenonL, StandardL, LFClipNoise, LFDNoise0, LFDNoise1];
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -25,6 +24,7 @@
 	(97 + i).asAscii.asSymbol
 });
 
+
 ~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
 	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, ~forceArgs
 );
@@ -34,7 +34,7 @@
 ~gep.transpositionRate = 0.2;
 ~gep.rootTranspositionRate = 0.3;
 ~gep.geneRecombinationRate = 0.25;
-~gep.geneTranspositionRate = 0.1;
+~gep.geneTranspositionRate = 0.0;
 
 ~paramheadsize = 5;
 ~paramnumgenes = ~terminals.size;
@@ -72,7 +72,7 @@
 
 Routine({
 
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/frag44.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/ctronics01.aif");
 	
 	s.sync;
 
@@ -244,8 +244,9 @@ Routine({
 [~gep.meanScore, ~gep.maxScore]
 [~gep.meanScore, ~gep.maxScore, ~gep.chromosomes.collect(_.score).stdDev].postln
 
-~th = 7.0;
+~th = 6.8;
 ~gep.chromosomes.collect(_.score).select({|sc| sc > ~th })
+~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
 
 (~gep.chromosomes.collect(_.score).select({|sc| sc == 0 }).size / ~populationSize)
 
@@ -262,7 +263,7 @@ Routine({
 				.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, true).postln;
 			args =  [~terminals, ~params[i]].lace(~terminals.size * 2).postln;
 			Post << "SCORE: " << ~gep.at(i).score << Char.nl;
-			synth = Synth(def.name, [\amp, 1, \dur, fragdur] ++ args)
+			synth = Synth(def.name, [\amp, 0.7, \dur, fragdur] ++ args)
 				.setn(\env, Env([0,1,1,0],[0.1, 0.8, 0.1]));
 			fragdur.wait;
 			synth.free;
@@ -280,8 +281,8 @@ Routine({
 var save = true;
 
 Routine({
-	var fragdur = ~targetBuffer.duration, indices;
-	indices = [17, 19];
+	var fragdur = 5, indices;
+	indices = [];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];

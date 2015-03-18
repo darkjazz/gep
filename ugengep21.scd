@@ -1,16 +1,15 @@
 // GEP with a target time-based sound analysis for percussive sounds
 
 (
-
 // UGENS
 
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 12;
-~numgenes = 2;
-~populationSize = 32;
+~headsize = 14;
+~numgenes = 4;
+~populationSize = 64;
 
-~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, SyncSaw, SawDPW, Crackle, LFNoise1, LFNoise2, LFNoise0, Dust2, Blip, Saw, PMOsc, BPF, HPF, LPF, Logist0, CML0, LFClipNoise, LFDNoise0, LFDNoise1];
+~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Dust2, Crackle, Blip, Saw, PMOsc, Logist0, CML0, QuadL, CuspL, GbmanL, HenonL, StandardL, LFClipNoise, LFDNoise0, LFDNoise1];
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -25,6 +24,7 @@
 	(97 + i).asAscii.asSymbol
 });
 
+
 ~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
 	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, ~forceArgs
 );
@@ -34,7 +34,7 @@
 ~gep.transpositionRate = 0.2;
 ~gep.rootTranspositionRate = 0.3;
 ~gep.geneRecombinationRate = 0.25;
-~gep.geneTranspositionRate = 0.1;
+~gep.geneTranspositionRate = 0.0;
 
 ~paramheadsize = 5;
 ~paramnumgenes = ~terminals.size;
@@ -42,20 +42,21 @@
 
 ~paramethods = ['*', '-', '+', '/'].collect({|opname|
 	AbstractFunction.methods.select({|meth| meth.name == opname }).first
-}) ++ ControlSpec.methods.select({|mth| mth.name == 'map' });
+});
 
 ~paramgep = GEP(~populationSize, ~paramnumgenes, ~paramheadsize, ~paramethods, ~paramterminals, 
 	Array.class.methods.select({|mth| mth.name == 'with' }).first
 );
 
-~maps = #[freq, lofreq, midfreq, widefreq, phase].collect({|name|
+~maps = #[unipolar, bipolar, freq, lofreq, midfreq, widefreq].collect({|name|
 	ControlSpec.specs[name]
 });
 
 ~paramgep.chromosomes.do({|chrom| 
 	chrom.fillConstants(~paramterminals.size, { rrand(0.0, 1.0) }); 
-	chrom.addExtraDomain(Array.with(~maps.choose))
+	~terminals.size.do({ chrom.addExtraDomain(~maps.choose) })
 });
+
 
 ~paramgep.mutationRate = 0.25;
 ~paramgep.recombinationRate = 1.0;
@@ -72,7 +73,7 @@
 
 Routine({
 
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/frag44.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/ctronics01.aif");
 	
 	s.sync;
 
@@ -144,10 +145,9 @@ Routine({
 	});
 
 	~params = ~paramgep.chromosomes.collect({|chrom, i|
-		var spec;
-		spec = chrom.extraDomains.first.first.asString.drop(2);
-		chrom.asExpressionTree(false).asFunctionString
-			.replace("map", spec ++ ".map").interpret.value(*chrom.constants)
+		var rawargs;
+		rawargs = chrom.asExpressionTree(false).asFunctionString.interpret.value(*chrom.constants);
+		rawargs.collect({|num, i| chrom.extraDomains[i].map(num.wrap(0.0, 1.0)).roundFreq })
 	});
 			
 	Routine({
@@ -244,8 +244,9 @@ Routine({
 [~gep.meanScore, ~gep.maxScore]
 [~gep.meanScore, ~gep.maxScore, ~gep.chromosomes.collect(_.score).stdDev].postln
 
-~th = 7.0;
+~th = 7;
 ~gep.chromosomes.collect(_.score).select({|sc| sc > ~th })
+~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
 
 (~gep.chromosomes.collect(_.score).select({|sc| sc == 0 }).size / ~populationSize)
 
@@ -259,14 +260,15 @@ Routine({
 			var synth, args;
 			Post << "-------------  START " << def.name << " --------------" << Char.nl;
 			~gep.at(i).asUgenExpressionTree
-				.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, true).postln;
+				.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, false).postln;
 			args =  [~terminals, ~params[i]].lace(~terminals.size * 2).postln;
 			Post << "SCORE: " << ~gep.at(i).score << Char.nl;
-			synth = Synth(def.name, [\amp, 1, \dur, fragdur] ++ args)
-				.setn(\env, Env([0,1,1,0],[0.1, 0.8, 0.1]));
+			synth = Synth(def.name, [\amp, 0.0, \dur, fragdur+0.5] ++ args);
+			0.2.wait;
+			synth.set('amp', 0.5);
 			fragdur.wait;
 			synth.free;
-			synth = nil;				
+			synth = nil;		
 			s.sync;
 			0.5.wait;
 		}
@@ -280,18 +282,19 @@ Routine({
 var save = true;
 
 Routine({
-	var fragdur = ~targetBuffer.duration, indices;
-	indices = [17, 19];
+	var fragdur = 5, indices;
+	indices = [9, 19, 26, 32, 38, 39, 40, 45, 51, 58, 62, 63];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];
 		Post << "-------------  START " << def.name << " --------------" << Char.nl;
 		et = ~gep.at(ind).asUgenExpressionTree;
-		et.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, true).postln;
+		et.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, false).postln;
 		args =  [~terminals, ~params[ind]].lace(~terminals.size * 2).postln;
 		Post << "SCORE: " << ~gep.at(ind).score << Char.nl;
-		synth = Synth(def.name, [\amp, 1, \dur, fragdur] ++ args)
-			.setn(\env, Env([0,1,1,0],[0.1, 0.8, 0.1]));
+		synth = Synth(def.name, [\amp, 0, \dur, fragdur+0.5] ++ args);
+		0.2.wait;
+		synth.set('amp', 0.5);
 		fragdur.wait;
 		synth.free;
 		synth = nil;				

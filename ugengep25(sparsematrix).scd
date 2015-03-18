@@ -1,16 +1,16 @@
-// GEP with a target time-based sound analysis for percussive sounds
+// SAVE SYNTHS IN COUCHDB AS JSON
+// SPARSEMATRIX SYNTHDEF IMPLEMENTATION
 
 (
-
 // UGENS
 
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 12;
-~numgenes = 2;
-~populationSize = 32;
+~headsize = 16;
+~numgenes = 1;
+~populationSize = 128;
 
-~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, SyncSaw, SawDPW, Crackle, LFNoise1, LFNoise2, LFNoise0, Dust2, Blip, Saw, PMOsc, BPF, HPF, LPF, Logist0, CML0, LFClipNoise, LFDNoise0, LFDNoise1];
+~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFGauss, SinOscFB, LFPulse, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Blip, Saw, PMOsc, FBSineN, FBSineL, Logist1, GbmanL, CuspN, LatoocarfianN];
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -25,8 +25,9 @@
 	(97 + i).asAscii.asSymbol
 });
 
+
 ~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
-	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, ~forceArgs
+	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, methodRatio: 0.9
 );
 
 ~gep.mutationRate = 0.3;
@@ -34,7 +35,9 @@
 ~gep.transpositionRate = 0.2;
 ~gep.rootTranspositionRate = 0.3;
 ~gep.geneRecombinationRate = 0.25;
-~gep.geneTranspositionRate = 0.1;
+~gep.geneTranspositionRate = 0.0;
+
+~gep.dbname = "ges_00";
 
 ~paramheadsize = 5;
 ~paramnumgenes = ~terminals.size;
@@ -42,20 +45,26 @@
 
 ~paramethods = ['*', '-', '+', '/'].collect({|opname|
 	AbstractFunction.methods.select({|meth| meth.name == opname }).first
-}) ++ ControlSpec.methods.select({|mth| mth.name == 'map' });
+});
 
 ~paramgep = GEP(~populationSize, ~paramnumgenes, ~paramheadsize, ~paramethods, ~paramterminals, 
 	Array.class.methods.select({|mth| mth.name == 'with' }).first
 );
 
-~maps = #[freq, lofreq, midfreq, widefreq, phase].collect({|name|
+~maps = #[unipolar, bipolar, lofreq, midfreq].collect({|name|
 	ControlSpec.specs[name]
-});
+}) ++ [
+	ControlSpec(16.0, 256.0, 'exp', 0, 55.0), 
+	ControlSpec(8.0, 1024.0, 'exp', 0, 110.0),
+	ControlSpec(4096.0, 16384.0, 'exp', 0, 8192.0),
+	ControlSpec(32.0, 512.0, 'exp', 0, 256.0)
+];
 
 ~paramgep.chromosomes.do({|chrom| 
 	chrom.fillConstants(~paramterminals.size, { rrand(0.0, 1.0) }); 
-	chrom.addExtraDomain(Array.with(~maps.choose))
+	~terminals.size.do({ chrom.addExtraDomain(~maps.choose) })
 });
+
 
 ~paramgep.mutationRate = 0.25;
 ~paramgep.recombinationRate = 1.0;
@@ -72,7 +81,7 @@
 
 Routine({
 
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/frag44.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/gepsynth02.aif");
 	
 	s.sync;
 
@@ -104,6 +113,21 @@ Routine({
 
 )
 
+(
+~makeGepDef = {|name, func, nargs = 8|
+	SynthDef(name, {|out, dur = 0.1, amp = 1.0, rotx = 0.0, roty = 0.0, rotz = 0.0|
+		var sig;
+		sig = SynthDef.wrap(func, prependArgs: ArrayControl.kr('gepargs', nargs, 0.0) )
+			* EnvGen.kr(EnvControl.kr, timeScale: dur, doneAction: 2);
+		Out.ar(out, FoaTransform.ar(
+			FoaEncode.ar(sig * amp, FoaEncoderMatrix.newDirection), 'rtt', rotx, roty, rotz)
+		)
+	});
+}
+
+)
+
+
 ~targetAnalyzer.currentStats
 ~targetAnalyzer.currentErrors.mean
 ~targetAnalyzer.calculateCPUsage
@@ -112,6 +136,7 @@ Routine({
 
 (
 // fitness function based on target
+~env = Env(#[0.001, 1.0, 1.0, 0.001], #[0.1, 0.8, 0.1], \exp);
 
 ~gep.addFitnessFunc({
 	
@@ -122,14 +147,15 @@ Routine({
 	~depths = Array.newClear(~gep.chromosomes.size);
 		
 	~defs = ~gep.chromosomes.collect({|chrom, i|
-		var defname, defstr, tree;
+		var defname, defstr, tree, fnc;
 		defname = ("gep_gen" ++ ~gep.generationCount.asString.padLeft(3, "0") 
 			++ "_" ++ i.asString.padLeft(3, "0")).asSymbol;
 		tree = chrom.asUgenExpressionTree;
 		~depths[i] = tree.maxDepth;
-		defstr = tree.asSynthDefString(defname, Pan2, Normalizer);
+		defstr = tree.asSynthDefWrapString(Normalizer);
+		fnc = defstr.interpret;
 		{
-			defstr.interpret.add
+			~makeGepDef.(defname, fnc, ~terminals.size).add
 		}.try({
 			chrom.score = -1;
 			nil	
@@ -144,10 +170,9 @@ Routine({
 	});
 
 	~params = ~paramgep.chromosomes.collect({|chrom, i|
-		var spec;
-		spec = chrom.extraDomains.first.first.asString.drop(2);
-		chrom.asExpressionTree(false).asFunctionString
-			.replace("map", spec ++ ".map").interpret.value(*chrom.constants)
+		var rawargs;
+		rawargs = chrom.asExpressionTree(false).asFunctionString.interpret.value(*chrom.constants);
+		rawargs.collect({|num, i| chrom.extraDomains[i].map(num.wrap(0.0, 1.0)).roundFreq })
 	});
 			
 	Routine({
@@ -168,10 +193,9 @@ Routine({
 				Post << "-------------  START " << def.name << " --------------" << Char.nl;
 				~gepAnalyzer.run(rate: ~rate);
 				synth = Synth.before(~gepAnalyzer.synth, def.name, 
-					[\out, ~gepAnalyzer.bus, \amp, 1] 
-					++ [~terminals, ~params[i]].lace(~terminals.size * 2));
+					[\out, ~gepAnalyzer.bus, \amp, 1, \dur, fragdur] 
+				).setn('env', ~env).setn('gepargs', ~params[i]);
 				fragdur.wait;
-				synth.free;
 				synth = nil;
 				~gepAnalyzer.freeSynth;	
 				normalized = ~gepAnalyzer.calculateDistances;
@@ -231,9 +255,14 @@ Routine({
 
 )
 
+~env
+
 // run first time
 ~gep.updateScores
 
+~decoder = FoaDecoder(decoderType: 'stereo');
+
+~decoder.start
 
 (
 // for each next generation
@@ -244,74 +273,75 @@ Routine({
 [~gep.meanScore, ~gep.maxScore]
 [~gep.meanScore, ~gep.maxScore, ~gep.chromosomes.collect(_.score).stdDev].postln
 
-~th = 7.0;
+~th = 6.0;
 ~gep.chromosomes.collect(_.score).select({|sc| sc > ~th })
-
+~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
+ 
 (~gep.chromosomes.collect(_.score).select({|sc| sc == 0 }).size / ~populationSize)
 
 ~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
 
 (
-Routine({
+~rt = Routine({
 	var fragdur = ~targetBuffer.duration;
 	~defs.do({|def, i|
 		if (~gep.at(i).score > ~th) {
 			var synth, args;
 			Post << "-------------  START " << def.name << " --------------" << Char.nl;
 			~gep.at(i).asUgenExpressionTree
-				.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, true).postln;
-			args =  [~terminals, ~params[i]].lace(~terminals.size * 2).postln;
+				.asSynthDefWrapString(Normalizer).postln;
 			Post << "SCORE: " << ~gep.at(i).score << Char.nl;
-			synth = Synth(def.name, [\amp, 1, \dur, fragdur] ++ args)
-				.setn(\env, Env([0,1,1,0],[0.1, 0.8, 0.1]));
-			fragdur.wait;
-			synth.free;
-			synth = nil;				
+			synth = Synth.before(~decoder.synth, def.name, [\out, ~decoder.bus, 
+				\amp, 0.5, \dur, fragdur]
+				).setn('env', ~env).setn('gepargs', ~params[i]);
 			s.sync;
+			fragdur.wait;
+			synth = nil;
 			0.5.wait;
 		}
 	})
 }).play
 )
 
+s.queryAllNodes
+
+~rt.stop
 
 (
 
 var save = true;
 
 Routine({
-	var fragdur = ~targetBuffer.duration, indices;
-	indices = [17, 19];
+	var fragdur = 5, indices;
+	indices = [0, 14, 25, 27, 30, 32, 59, 84, 85, 86, 106, 114];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];
 		Post << "-------------  START " << def.name << " --------------" << Char.nl;
 		et = ~gep.at(ind).asUgenExpressionTree;
-		et.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, true).postln;
+		et.asSynthDefWrapString(def.name.asSymbol, Pan2, Normalizer, false).postln;
 		args =  [~terminals, ~params[ind]].lace(~terminals.size * 2).postln;
 		Post << "SCORE: " << ~gep.at(ind).score << Char.nl;
-		synth = Synth(def.name, [\amp, 1, \dur, fragdur] ++ args)
-			.setn(\env, Env([0,1,1,0],[0.1, 0.8, 0.1]));
-		fragdur.wait;
-		synth.free;
-		synth = nil;				
+		synth = Synth.before(~decoder.synth, def.name, [\out, ~decoder.bus, 
+			\amp, 0.5, \dur, fragdur])
+			.setn('env', ~env).setn('gepargs', ~params[ind]);
 		s.sync;
+		fragdur.wait;
+		synth = nil;
 		0.5.wait;
 		if (save) {
-			co = ~paramgep.chromosomes[ind];
-			savename = ~gep.makeDefName(ind);
-			cospec = ('code': co.code, 'args': args, 
-				'constants': co.constants, 'extraDomains': co.extraDomains, 'defname': savename);
-			et.saveAsSynthDef(savename, Pan2, Normalizer, cospec, ~gepAnalyzer.stats[def.name.asSymbol]);
-			~gep.saveData(ind, savename);
+			~gep.saveJson(ind, Pan2, Normalizer, args, ~paramgep.chromosomes[ind], 
+				~gepAnalyzer.stats[def.name.asSymbol]
+			);
 		}
 	})
 }).play
 
 )
 
+~def = ~defs[1]
 
-/*
-gep_gen008_024_130501_211817
-gep_gen008_057_130501_211838
-*/
+~stats = ~gepAnalyzer.stats[~def.name.asSymbol]
+
+~stats.last
+

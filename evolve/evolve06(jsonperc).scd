@@ -1,16 +1,17 @@
-// GEP with a target time-based sound analysis for percussive sounds
+// evolve a population of percussive synths from 2 initial chromosomes, json loader
+// todo: need a view in couchdb for docByDefName (to get stats and args) and loader method to unpack
 
 (
-
-// UGENS
-
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 12;
-~numgenes = 2;
-~populationSize = 32;
+~headsize = 16;
+~numgenes = 1;
+~populationSize = 2;
 
-~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, SyncSaw, SawDPW, Crackle, LFNoise1, LFNoise2, LFNoise0, Dust2, Blip, Saw, PMOsc, BPF, HPF, LPF, Logist0, CML0, LFClipNoise, LFDNoise0, LFDNoise1];
+// UGENS
+~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFPulse, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Dust2, Crackle, Blip, Saw, PMOsc, Logist0, CML0, QuadL, CuspL, GbmanL, HenonL, StandardL, LFClipNoise, LFDNoise0, LFDNoise1];
+
+~abbrev = ~ugens.collect({|ugen| ugen.name.asString.keep(4) });
 
 ~methods = ~ugens.collect({|ugen| 
 	var ar;
@@ -25,54 +26,78 @@
 	(97 + i).asAscii.asSymbol
 });
 
-~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
-	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, ~forceArgs
+
+~gep = UGEP(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
+	AbstractFunction.methods.select({|meth| meth.name == '*' }).first
 );
 
-~gep.mutationRate = 0.3;
-~gep.recombinationRate = 0.5;
-~gep.transpositionRate = 0.2;
-~gep.rootTranspositionRate = 0.3;
-~gep.geneRecombinationRate = 0.25;
+~loader = JsonLoader("ges_00");
+
+~init = [ 'gep_gen000_004_150212_214212', 'gep_gen000_010_150212_214225' ].collect({|name|
+	~loader.getDocumentByDefName(name)
+});
+
+~init.do({|data, i|
+	~gep.chromosomes[i] = GEPChromosome.fromJsonData(~init[i])
+});
+
+~gep.mutationRate = 0.1;
+~gep.recombinationRate = 1.0;
+~gep.transpositionRate = 0.25;
+~gep.rootTranspositionRate = 0.1;
+~gep.geneRecombinationRate = 0.1;
 ~gep.geneTranspositionRate = 0.1;
 
+// parameters
 ~paramheadsize = 5;
 ~paramnumgenes = ~terminals.size;
 ~paramterminals = ['w', 'x', 'y', 'z'];
 
 ~paramethods = ['*', '-', '+', '/'].collect({|opname|
 	AbstractFunction.methods.select({|meth| meth.name == opname }).first
-}) ++ ControlSpec.methods.select({|mth| mth.name == 'map' });
+});
 
 ~paramgep = GEP(~populationSize, ~paramnumgenes, ~paramheadsize, ~paramethods, ~paramterminals, 
 	Array.class.methods.select({|mth| mth.name == 'with' }).first
 );
 
-~maps = #[freq, lofreq, midfreq, widefreq, phase].collect({|name|
+
+~init.do({|data, i|
+	~paramgep.chromosomes[i] = GEPChromosome(data.argchrom.code, 
+		~paramterminals, ~paramnumgenes, ~paramgep.linker);
+	~paramgep.chromosomes[i].constants = data.argchrom.constants;
+	~paramgep.chromosomes[i].extraDomains = data.argchrom.extraDomains;
+});
+
+~maps = #[unipolar, bipolar, freq, lofreq, midfreq, widefreq].collect({|name|
 	ControlSpec.specs[name]
 });
 
-~paramgep.chromosomes.do({|chrom| 
-	chrom.fillConstants(~paramterminals.size, { rrand(0.0, 1.0) }); 
-	chrom.addExtraDomain(Array.with(~maps.choose))
-});
-
-~paramgep.mutationRate = 0.25;
+~paramgep.mutationRate = 0.1;
 ~paramgep.recombinationRate = 1.0;
 ~paramgep.transpositionRate = 0.25;
 ~paramgep.rootTranspositionRate = 0.1;
 ~paramgep.geneRecombinationRate = 0.1;
 ~paramgep.geneTranspositionRate = 0.1;
 
+)
+
+(
+// evolve 5 generations, each doubling in size
+4.do({
+	~gep.growPopulation;
+	~paramgep.growPopulation;
+});
 
 )
+
 
 (
 // create target statistics
 
 Routine({
 
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/frag44.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/dlnj.aif");
 	
 	s.sync;
 
@@ -104,14 +129,13 @@ Routine({
 
 )
 
-~targetAnalyzer.currentStats
-~targetAnalyzer.currentErrors.mean
-~targetAnalyzer.calculateCPUsage
+~decoder = FoaDecoder(decoderType:'stereo')
 
-~gep.removeFitnessFunc(0)
+~player = JGepPlayer(~decoder, CinderApp(), ~loader);
 
 (
 // fitness function based on target
+~env = Env(#[0.001, 1.0, 1.0, 0.001], #[0.1, 0.8, 0.1], \exp);
 
 ~gep.addFitnessFunc({
 	
@@ -120,16 +144,17 @@ Routine({
 	};
 	
 	~depths = Array.newClear(~gep.chromosomes.size);
-		
+	
 	~defs = ~gep.chromosomes.collect({|chrom, i|
-		var defname, defstr, tree;
-		defname = ("gep_gen" ++ ~gep.generationCount.asString.padLeft(3, "0") 
+		var defname, defstr, tree, fnc;
+		defname = ("gep_gen" ++ chrom.generation.asString.padLeft(3, "0") 
 			++ "_" ++ i.asString.padLeft(3, "0")).asSymbol;
 		tree = chrom.asUgenExpressionTree;
 		~depths[i] = tree.maxDepth;
-		defstr = tree.asSynthDefString(defname, Pan2, Normalizer);
+		defstr = tree.asSynthDefWrapString(Normalizer);
+		fnc = defstr.interpret;
 		{
-			defstr.interpret.add
+			~player.makeGepDef(defname, fnc, ~terminals.size).add
 		}.try({
 			chrom.score = -1;
 			nil	
@@ -143,11 +168,13 @@ Routine({
 		~depthSpec.unmap(depth)
 	});
 
-	~params = ~paramgep.chromosomes.collect({|chrom, i|
-		var spec;
-		spec = chrom.extraDomains.first.first.asString.drop(2);
-		chrom.asExpressionTree(false).asFunctionString
-			.replace("map", spec ++ ".map").interpret.value(*chrom.constants)
+	~params	 = ~paramgep.chromosomes.collect({|chrom, i|
+		var rawargs;
+		rawargs = chrom.asExpressionTree(false).asFunctionString.interpret
+			.value(*chrom.constants);
+		rawargs.collect({|num, i| 
+			chrom.extraDomains[i].map(num.wrap(0.0, 1.0)).roundFreq 
+		})
 	});
 			
 	Routine({
@@ -165,17 +192,18 @@ Routine({
 			if (def.notNil) {
 			
 				~gepAnalyzer.currentDef = def.name.asSymbol;
-				Post << "-------------  START " << def.name << " --------------" << Char.nl;
+				Post << "-------------  START " << def.name << " --------------" 
+					<< Char.nl;
 				~gepAnalyzer.run(rate: ~rate);
-				synth = Synth.before(~gepAnalyzer.synth, def.name, 
-					[\out, ~gepAnalyzer.bus, \amp, 1] 
-					++ [~terminals, ~params[i]].lace(~terminals.size * 2));
+				synth = ~player.playGepDef(def.name.asSymbol, ~gepAnalyzer.bus, 1, fragdur, 
+					~env, ~params[i], ~gepAnalyzer.synth);
 				fragdur.wait;
-				synth.free;
 				synth = nil;
 				~gepAnalyzer.freeSynth;	
 				normalized = ~gepAnalyzer.calculateDistances;
-				normalized.mfcc = normalized.mfcc.select({|array| array.includes(0/0).not });
+				normalized.mfcc = normalized.mfcc.select({|array| 
+					array.includes(0/0).not 
+				});
 				normalized.flat = normalized.flat.select({|item| item > 0 });
 				normalized.cent = normalized.cent.select({|item| item > 0 });
 				normalized.amp = normalized.amp.select({|item| item > 0 });
@@ -219,7 +247,8 @@ Routine({
 				<< " new score: " << ~gep[i].score << "; original: " << pscore 
 				<< "; depth: " << (~normalizedDepthScores[i] * 0.5).round(0.001)
 				<< "; cpu: " << cpu[def.name.asSymbol].round(0.001)
-				<< "; total change: " << (~gep[i].score - pscore).round(0.001) << Char.nl;
+				<< "; total change: " << (~gep[i].score - pscore).round(0.001) 
+					<< Char.nl;
 			}
 		});
 		~gepAnalyzer.clear;
@@ -231,87 +260,90 @@ Routine({
 
 )
 
-// run first time
+
+
+// update scores for all chromosomes
+
 ~gep.updateScores
 
 
+~gep.drawSimilarityMatrix(8)
+
+~smatrix = ~gep.similarityMatrix.deepCopy
+
 (
-// for each next generation
-~paramgep.nextGeneration;
-~gep.nextGeneration;
+~current = 0;
+~seq = [];
+32.do({
+	var sim;
+	~smatrix[~current][~current] = 0;
+	sim = ~smatrix[~current];
+	~closest = sim.indexOf(sim.maxItem);
+	~seq = ~seq.add((ind: ~current, sim: sim.maxItem));
+	~smatrix.do({|arr| arr[~current] = 0 });
+	~current = ~closest;
+})
+)
+~inds = ~seq.collect(_.ind)
+
+
+// ambisonic decoder start
+~decoder = FoaDecoder(decoderType: 'stereo')
+
+
+(
+// prepare data for ges player
+~data = ~params.collect({|values, i|
+	(
+	defname: ~defs[i].name, 
+	args: (args: [~terminals, values].lace(~terminals.size * 2)), 
+	data: (code: ~gep.chromosomes[i].code, terminals: ~terminals, linker: ~gep.linker, 
+			header: (numgenes: ~numgenes)
+		)
+	)
+})
 )
 
-[~gep.meanScore, ~gep.maxScore]
-[~gep.meanScore, ~gep.maxScore, ~gep.chromosomes.collect(_.score).stdDev].postln
+~decoder.start
 
-~th = 7.0;
-~gep.chromosomes.collect(_.score).select({|sc| sc > ~th })
+~player = GepPlayer(~data, ~decoder)
 
-(~gep.chromosomes.collect(_.score).select({|sc| sc == 0 }).size / ~populationSize)
+~player.start
 
-~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
+~player.setFoa('zoom', 1.0)
+
+~player.setFoa('focus', 1.0)
+
+s.record
 
 (
-Routine({
-	var fragdur = ~targetBuffer.duration;
-	~defs.do({|def, i|
-		if (~gep.at(i).score > ~th) {
-			var synth, args;
-			Post << "-------------  START " << def.name << " --------------" << Char.nl;
-			~gep.at(i).asUgenExpressionTree
-				.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, true).postln;
-			args =  [~terminals, ~params[i]].lace(~terminals.size * 2).postln;
-			Post << "SCORE: " << ~gep.at(i).score << Char.nl;
-			synth = Synth(def.name, [\amp, 1, \dur, fragdur] ++ args)
-				.setn(\env, Env([0,1,1,0],[0.1, 0.8, 0.1]));
-			fragdur.wait;
-			synth.free;
-			synth = nil;				
-			s.sync;
-			0.5.wait;
+~rout = Routine({
+	var meandur, mul = 10;
+	meandur = (~gep.chromosomes.collect(_.score)*mul).mean;
+	~seq.do({|item|
+		var amp, score, dur;
+		score = ~gep.chromosomes[item.ind].score;
+		if (score > 0)
+		{
+			dur = score * mul;
+			amp = rrand(0.3, 0.5);
+			~player.play(item.ind, 0);
+			~player.fade(item.ind, 0, amp, dur*0.2);
+			SystemClock.sched(dur*0.8, { ~player.fade(item.ind, amp, 0, dur*0.2); nil });
+			SystemClock.sched(dur, { ~player.free(item.ind); nil });
+			(meandur*rrand(0.3, 0.5)).wait;
 		}
 	})
-}).play
-)
-
-
-(
-
-var save = true;
-
-Routine({
-	var fragdur = ~targetBuffer.duration, indices;
-	indices = [17, 19];
-	indices.do({|ind, i|
-		var synth, args, def, savename, et, co, cospec;
-		def = ~defs[ind];
-		Post << "-------------  START " << def.name << " --------------" << Char.nl;
-		et = ~gep.at(ind).asUgenExpressionTree;
-		et.asSynthDefString(def.name.asSymbol, Pan2, Normalizer, true).postln;
-		args =  [~terminals, ~params[ind]].lace(~terminals.size * 2).postln;
-		Post << "SCORE: " << ~gep.at(ind).score << Char.nl;
-		synth = Synth(def.name, [\amp, 1, \dur, fragdur] ++ args)
-			.setn(\env, Env([0,1,1,0],[0.1, 0.8, 0.1]));
-		fragdur.wait;
-		synth.free;
-		synth = nil;				
-		s.sync;
-		0.5.wait;
-		if (save) {
-			co = ~paramgep.chromosomes[ind];
-			savename = ~gep.makeDefName(ind);
-			cospec = ('code': co.code, 'args': args, 
-				'constants': co.constants, 'extraDomains': co.extraDomains, 'defname': savename);
-			et.saveAsSynthDef(savename, Pan2, Normalizer, cospec, ~gepAnalyzer.stats[def.name.asSymbol]);
-			~gep.saveData(ind, savename);
-		}
-	})
-}).play
+})
 
 )
 
+MasterEQ(2)
 
-/*
-gep_gen008_024_130501_211817
-gep_gen008_057_130501_211838
-*/
+~rout.play
+
+~rout.stop
+
+s.queryAllNodes
+
+s.stopRecording
