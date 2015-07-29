@@ -29,19 +29,29 @@
 	AbstractFunction.methods.select({|meth| meth.name == '*' }).first
 );
 
-//~init = UGepLoader().loadNames([ 
-//	'gep_gen003_025_141002_143026', 
-//	'gep_gen003_000_141027_104544'
-//]);
+~loader = JsonLoader("ges_00");
 
-~init = UGepLoader().loadNames([ 
-	'gep_gen004_022_150601_094333', 
-	'gep_gen004_024_150601_094339'
-]);
+~init = [ 'gep_gen005_024_150602_171058', 'gep_gen005_056_150602_171115' ].collect({|name|
+	~loader.getDocumentByDefName(name)
+});
 
+/*
+gep_gen004_024_150601_094339, gep_gen004_022_150601_094333
+gep_gen004_011_150601_102333, gep_gen004_002_150601_102322
+gep_gen005_016_150601_154429, gep_gen005_020_150601_154435
+gep_gen005_036_150601_155306, gep_gen005_055_150601_155311
+gep_gen005_009_150601_220926, gep_gen005_048_150601_220937
+gep_gen005_024_150602_094838, gep_gen005_054_150602_094844
+gep_gen005_025_150602_100148, gep_gen005_036_150602_100205
+gep_gen005_013_150602_120957, gep_gen005_023_150602_121020
+gep_gen005_034_150602_122508, gep_gen005_047_150602_122531
+gep_gen005_016_150602_131543, gep_gen005_019_150602_131548
+gep_gen005_012_150602_133238, gep_gen005_016_150602_133244
+gep_gen005_012_150602_160820, gep_gen005_017_150602_160831
+*/
 
 ~init.do({|data, i|
-	~gep.chromosomes[i] = GEPChromosome.fromData(~init[i].data)
+	~gep.chromosomes[i] = GEPChromosome.fromJsonData(~init[i])
 });
 
 ~gep.mutationRate = 0.1;
@@ -66,9 +76,9 @@
 
 
 ~init.do({|data, i|
-	~paramgep.chromosomes[i] = GEPChromosome(data.args.code, ~paramterminals, ~paramnumgenes, ~paramgep.linker);
-	~paramgep.chromosomes[i].constants = data.args.constants;
-	~paramgep.chromosomes[i].extraDomains = data.args.extraDomains;
+	~paramgep.chromosomes[i] = GEPChromosome(data.argchrom.code, ~paramterminals, ~paramnumgenes, ~paramgep.linker);
+	~paramgep.chromosomes[i].constants = data.argchrom.constants;
+	~paramgep.chromosomes[i].extraDomains = data.argchrom.extraDomains;
 });
 
 ~maps = #[unipolar, bipolar, freq, lofreq, midfreq, widefreq].collect({|name|
@@ -86,7 +96,7 @@
 
 (
 // evolve 5 generations, each doubling in size
-4.do({
+5.do({
 	~gep.growPopulation;
 	~paramgep.growPopulation;
 });
@@ -360,11 +370,13 @@ s.scope
 
 /// SAVE DEFS
 
-~th = 7.0
+~th = 6.9
 
 ~gep.chromosomes.collect(_.score).select({|it| it > ~th }).size
 
 [~gep.meanScore, ~gep.maxScore]
+
+s.record
 
 (
 ~rt = Routine({
@@ -380,16 +392,17 @@ s.scope
 			synth = Synth(def.name, [\amp, 0.0, \dur, fragdur+0.5] ++ args);
 			0.2.wait;
 			synth.set('amp', 0.5);
-			fragdur.wait;
+			(fragdur + rrand(0.5, 1.0)).wait;
 			synth.free;
 			synth = nil;		
 			s.sync;
-			0.5.wait;
+			rrand(0.5, 1.0).wait;
 		}
 	})
 }).play
 )
 
+s.stopRecording
 
 s.queryAllNodes
 
@@ -397,7 +410,7 @@ s.queryAllNodes
 
 ~inds.size
 
-
+24, 56
 
 (
 
@@ -405,7 +418,7 @@ var save = true;
 
 Routine({
 	var fragdur = 5, indices;
-	indices = [6, 9, 14, 16, 20, 22, 24, 31];
+	indices = [7, 20, 24, 26, 52, 56];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];

@@ -5,8 +5,8 @@
 
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 12;
-~numgenes = 3;
+~headsize = 14;
+~numgenes = 2;
 ~populationSize = 64;
 
 ~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFGauss, SinOscFB, LFPulse, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Blip, Saw, PMOsc, FBSineN, FBSineL, Logist1, GbmanL, CuspN, LatoocarfianN];
@@ -26,7 +26,7 @@
 
 
 ~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
-	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, ~forceArgs
+	Object.methods.select({|meth| meth.name == '**' }).first, ~forceArgs
 );
 
 ~gep.mutationRate = 0.3;
@@ -75,7 +75,7 @@
 
 Routine({
 
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/dlnj.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/atak.aiff");
 	
 	s.sync;
 

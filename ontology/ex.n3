@@ -1,0 +1,49 @@
+envir-2015-06-15 a ges:Environment ;
+	ges:methods "LFCub",
+   				"LFPar",
+   				"LFSaw",
+			   	"SinOsc",
+			   	"LFTri",
+			   	"LFGauss",
+			   	"SinOscFB",
+			   	"LFPulse",
+			   	"Formant",
+			   	"Pulse",
+			   	"LFNoise1",
+			   	"LFNoise2",
+			   	"LFNoise0",
+			   	"SyncSaw",
+			   	"Blip",
+			   	"Saw",
+			   	"PMOsc",
+			   	"FBSineN",
+			   	"FBSineL",
+			   	"Logist1",
+			   	"GbmanL",
+			   	"CuspN",
+			   	"LatoocarfianN" ;
+	ges:terminals 	"a",
+				   	"b",
+				   	"c",
+				   	"d",
+				   	"e",
+				   	"f",
+				   	"g",
+				   	"h",
+				   	"i",
+				   	"j",
+				   	"k",
+				   	"l",
+				   	"m",
+				   	"n",
+				   	"o",
+				   	"p" ;
+	ges:linker 	"*" ;
+	ges:head_size 	24 ;
+	ges:number_of_genes	1 . 
+
+synth-25eea474cd04d019e8108a5eb401faa6 a ges:Synth ;
+	ges:guid 	"25eea474cd04d019e8108a5eb401faa6" ;
+	ges:defname	"gep_gen004_125_150326_080847" ;
+	ges:date	"2015-06-15T19:32:42.235692" ;
+	ges:genome	()

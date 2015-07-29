@@ -2,7 +2,7 @@
 (
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 14;
+~headsize = 16;
 ~numgenes = 4;
 ~populationSize = 2;
 

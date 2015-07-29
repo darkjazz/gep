@@ -29,19 +29,14 @@
 	AbstractFunction.methods.select({|meth| meth.name == '*' }).first
 );
 
-//~init = UGepLoader().loadNames([ 
-//	'gep_gen003_025_141002_143026', 
-//	'gep_gen003_000_141027_104544'
-//]);
+~loader = JsonLoader("ges_00");
 
-~init = UGepLoader().loadNames([ 
-	'gep_gen004_022_150601_094333', 
-	'gep_gen004_024_150601_094339'
-]);
-
+~init = [ 'gep_gen001_016_141002_132750', 'gep_gen001_063_141027_100718' ].collect({|name|
+	~loader.getDocumentByDefName(name)
+});
 
 ~init.do({|data, i|
-	~gep.chromosomes[i] = GEPChromosome.fromData(~init[i].data)
+	~gep.chromosomes[i] = GEPChromosome.fromJsonData(~init[i])
 });
 
 ~gep.mutationRate = 0.1;
@@ -66,9 +61,9 @@
 
 
 ~init.do({|data, i|
-	~paramgep.chromosomes[i] = GEPChromosome(data.args.code, ~paramterminals, ~paramnumgenes, ~paramgep.linker);
-	~paramgep.chromosomes[i].constants = data.args.constants;
-	~paramgep.chromosomes[i].extraDomains = data.args.extraDomains;
+	~paramgep.chromosomes[i] = GEPChromosome(data.argchrom.code, ~paramterminals, ~paramnumgenes, ~paramgep.linker);
+	~paramgep.chromosomes[i].constants = data.argchrom.constants;
+	~paramgep.chromosomes[i].extraDomains = data.argchrom.extraDomains;
 });
 
 ~maps = #[unipolar, bipolar, freq, lofreq, midfreq, widefreq].collect({|name|
@@ -100,7 +95,7 @@
 
 Routine({
 
-	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/urtinduu.aif");
+	~targetBuffer = Buffer.read(s, "/Users/alo/sounds/gep/atak.aiff");
 	
 	s.sync;
 
@@ -270,92 +265,17 @@ Routine({
 
 ~gep.drawSimilarityMatrix(8)
 
-~smatrix = ~gep.similarityMatrix.deepCopy
+~gep.draw
 
-(
-~current = 0;
-~seq = [];
-32.do({
-	var sim;
-	~smatrix[~current][~current] = 0;
-	sim = ~smatrix[~current];
-	~closest = sim.indexOf(sim.maxItem);
-	~seq = ~seq.add((ind: ~current, sim: sim.maxItem));
-	~smatrix.do({|arr| arr[~current] = 0 });
-	~current = ~closest;
-})
-)
-~inds = ~seq.collect(_.ind)
+~gep.drawCompare(0, 1)
+
+~gep.drawSimilarityMatrix(8)
 
 
-// ambisonic decoder start
-~decoder = FoaDecoder(decoderType: 'stereo')
+// draw abstract ugen graph
+~gep.chromosomes[0].asUgenExpressionTree.draw(~ugens, ~gep.colors)
 
 
-(
-// prepare data for ges player
-~data = ~params.collect({|values, i|
-	(
-	defname: ~defs[i].name, 
-	args: (args: [~terminals, values].lace(~terminals.size * 2)), 
-	data: (code: ~gep.chromosomes[i].code, terminals: ~terminals, linker: ~gep.linker, 
-			header: (numgenes: ~numgenes)
-		)
-	)
-})
-)
-
-~decoder.start
-
-~player = GepPlayer(~data, ~decoder)
-
-~player.start
-
-~player.setFoa('zoom', 1.0)
-
-~player.setFoa('focus', 1.0)
-
-s.record
-
-(
-~rout = Routine({
-	var meandur, mul = 10;
-	meandur = (~gep.chromosomes.collect(_.score)*mul).mean;
-	~seq.do({|item|
-		var amp, score, dur;
-		score = ~gep.chromosomes[item.ind].score;
-		if (score > 0)
-		{
-			dur = score * mul;
-			amp = rrand(0.3, 0.5);
-			~player.play(item.ind, 0);
-			~player.fade(item.ind, 0, amp, dur*0.2);
-			SystemClock.sched(dur*0.8, { ~player.fade(item.ind, amp, 0, dur*0.2); nil });
-			SystemClock.sched(dur, { ~player.free(item.ind); nil });
-			(meandur*rrand(0.3, 0.5)).wait;
-		}
-	})
-})
-
-)
-
-~inds
-
-MasterEQ(2)
-
-s.record
-
-~rout.play
-
-~rout.stop
-
-s.queryAllNodes
-
-s.stopRecording
-
-~seq.collect(_.ind)
-
-s.scope
 
 
 /// SAVE DEFS
@@ -365,6 +285,8 @@ s.scope
 ~gep.chromosomes.collect(_.score).select({|it| it > ~th }).size
 
 [~gep.meanScore, ~gep.maxScore]
+
+s.record
 
 (
 ~rt = Routine({
@@ -380,16 +302,17 @@ s.scope
 			synth = Synth(def.name, [\amp, 0.0, \dur, fragdur+0.5] ++ args);
 			0.2.wait;
 			synth.set('amp', 0.5);
-			fragdur.wait;
+			(fragdur + rrand(0.5, 1.0)).wait;
 			synth.free;
 			synth = nil;		
 			s.sync;
-			0.5.wait;
+			rrand(0.5, 1.0).wait;
 		}
 	})
 }).play
 )
 
+s.stopRecording
 
 s.queryAllNodes
 
@@ -397,7 +320,7 @@ s.queryAllNodes
 
 ~inds.size
 
-
+24, 56
 
 (
 
@@ -405,7 +328,7 @@ var save = true;
 
 Routine({
 	var fragdur = 5, indices;
-	indices = [6, 9, 14, 16, 20, 22, 24, 31];
+	indices = [9, 11, 13, 17, 23, 25, 31, 33, 34, 40, 47, 49, 50, 53, 54, 59];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];
@@ -455,6 +378,19 @@ Routine({
 
 ~player.free(~ind)
 
+
+~ind = 15;
+
+~gep.at(~ind).asUgenExpressionTree
+				.asSynthDefString(~defs[~ind].name.asSymbol, Pan2, Normalizer, false).postln;
+			
+			
+~args =  [~terminals, ~params[~ind]].lace(~terminals.size * 2).postln;
+~synth = Synth(~defs[~ind].name, [\amp, 0.0, \dur, 1.0] ++ ~args);
+
+~synth.set('amp', 0.5)
+
+~synth.free
 
 
 gep_gen004_019_150303_091430

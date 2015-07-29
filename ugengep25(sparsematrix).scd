@@ -6,9 +6,9 @@
 
 ~ncoef = 20;
 ~rate = 20;
-~headsize = 16;
+~headsize = 24;
 ~numgenes = 1;
-~populationSize = 128;
+~populationSize = 256;
 
 ~ugens = [LFCub, LFPar, LFSaw, SinOsc, LFTri, LFGauss, SinOscFB, LFPulse, Formant, Pulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Blip, Saw, PMOsc, FBSineN, FBSineL, Logist1, GbmanL, CuspN, LatoocarfianN];
 
@@ -21,20 +21,29 @@
 	ar
 });
 
+/*
 ~terminals = (~methods.collect(_.argNames).collect(_.size).maxItem + ~headsize).collect({|i|
-	(97 + i).asAscii.asSymbol
+	var str = "";
+	((i / 26).asInt + 1).do({|j|
+		str = str ++ (i % 26 + 97).asAscii;
+	});
+	str.asSymbol;
 });
+*/
 
+~terminals = 16.collect({|i|
+	(i + 97).asAscii.asSymbol
+});
 
 ~gep = UGEP.newValid(~populationSize, ~numgenes, ~headsize, ~ugens, ~terminals, 
 	AbstractFunction.methods.select({|meth| meth.name == '*' }).first, methodRatio: 0.9
 );
 
-~gep.mutationRate = 0.3;
-~gep.recombinationRate = 0.5;
+~gep.mutationRate = 0.2;
+~gep.recombinationRate = 1.0;
 ~gep.transpositionRate = 0.2;
-~gep.rootTranspositionRate = 0.3;
-~gep.geneRecombinationRate = 0.25;
+~gep.rootTranspositionRate = 0.2;
+~gep.geneRecombinationRate = 0.1;
 ~gep.geneTranspositionRate = 0.0;
 
 ~gep.dbname = "ges_00";
@@ -194,7 +203,7 @@ Routine({
 				~gepAnalyzer.run(rate: ~rate);
 				synth = Synth.before(~gepAnalyzer.synth, def.name, 
 					[\out, ~gepAnalyzer.bus, \amp, 1, \dur, fragdur] 
-				).setn('env', ~env).setn('gepargs', ~params[i]);
+				).setn('env', ~env).setn('gepargs', ~params[i].asInt.collect(_.nextPrime));
 				fragdur.wait;
 				synth = nil;
 				~gepAnalyzer.freeSynth;	
@@ -273,7 +282,7 @@ Routine({
 [~gep.meanScore, ~gep.maxScore]
 [~gep.meanScore, ~gep.maxScore, ~gep.chromosomes.collect(_.score).stdDev].postln
 
-~th = 6.0;
+~th = 7.0;
 ~gep.chromosomes.collect(_.score).select({|sc| sc > ~th })
 ~gep.chromosomes.collect(_.score).select({|sc| sc > ~th }).size
  
@@ -293,7 +302,7 @@ Routine({
 			Post << "SCORE: " << ~gep.at(i).score << Char.nl;
 			synth = Synth.before(~decoder.synth, def.name, [\out, ~decoder.bus, 
 				\amp, 0.5, \dur, fragdur]
-				).setn('env', ~env).setn('gepargs', ~params[i]);
+				).setn('env', ~env).setn('gepargs', ~params[i].asInt.collect(_.nextPrime));
 			s.sync;
 			fragdur.wait;
 			synth = nil;
@@ -307,24 +316,27 @@ s.queryAllNodes
 
 ~rt.stop
 
+~params[253].collect({|num| if (num.isNaN) { 0 } { num }  })
+
 (
 
 var save = true;
 
 Routine({
 	var fragdur = 5, indices;
-	indices = [0, 14, 25, 27, 30, 32, 59, 84, 85, 86, 106, 114];
+	indices = [253];
 	indices.do({|ind, i|
 		var synth, args, def, savename, et, co, cospec;
 		def = ~defs[ind];
 		Post << "-------------  START " << def.name << " --------------" << Char.nl;
 		et = ~gep.at(ind).asUgenExpressionTree;
-		et.asSynthDefWrapString(def.name.asSymbol, Pan2, Normalizer, false).postln;
-		args =  [~terminals, ~params[ind]].lace(~terminals.size * 2).postln;
+		et.asSynthDefWrapString(Normalizer).postln;
+		args =  [~terminals, ~params[ind].collect({|num| if (num.isNaN) { 0 } { num }  })]
+			.lace(~terminals.size * 2).postln;
 		Post << "SCORE: " << ~gep.at(ind).score << Char.nl;
 		synth = Synth.before(~decoder.synth, def.name, [\out, ~decoder.bus, 
 			\amp, 0.5, \dur, fragdur])
-			.setn('env', ~env).setn('gepargs', ~params[ind]);
+			.setn('env', ~env).setn('gepargs', ~params[ind].asInt.collect(_.nextPrime));
 		s.sync;
 		fragdur.wait;
 		synth = nil;
@@ -345,3 +357,4 @@ Routine({
 
 ~stats.last
 
+s.scope
