@@ -1,0 +1,262 @@
+@prefix afo: <http://sovarr.c4dm.eecs.qmul.ac.uk/af/ontology/1.0#> .
+@prefix afv: <http://sovarr.c4dm.eecs.qmul.ac.uk/af/vocabulary/1.0#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix ges: <http://geen.tehis.net/ontology/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<> a owl:Ontology ;
+    rdfs:label "Gene expression synthesis ontology"@en ;
+    dc:date "2015-08-19T14:35:50.130753" ;
+    dc:description "Ontology for gene expression synthesis, an evolutionary algorithm for sound synthesis"@en ;
+    dc:title "Gene expression synthesis ontology"@en ;
+    owl:versionInfo "Version 0.4" .
+
+ges:amplitude a owl:ObjectProperty ;
+    rdfs:label "amplitude"@en ;
+    rdfs:comment "amplitude property" ;
+    rdfs:domain afo:AudioFeature ;
+    rdfs:range afv:Amplitude .
+
+ges:arguments a owl:ObjectProperty ;
+    rdfs:label "arguments"@en ;
+    rdfs:comment "arguments property" ;
+    rdfs:domain ges:Synth ;
+    rdfs:range ges:Arguments .
+
+ges:centroid a owl:ObjectProperty ;
+    rdfs:label "centroid"@en ;
+    rdfs:comment "centroid property" ;
+    rdfs:domain afo:AudioFeature ;
+    rdfs:range afv:SpectralCentroid .
+
+ges:class a owl:ObjectProperty ;
+    rdfs:label "class"@en ;
+    rdfs:comment "class property" ;
+    rdfs:domain ges:Function ;
+    rdfs:range xsd:string .
+
+ges:constants a owl:ObjectProperty ;
+    rdfs:label "constants"@en ;
+    rdfs:comment "constants property" ;
+    rdfs:domain ges:Parameters ;
+    rdfs:range rdf:Seq .
+
+ges:context a owl:ObjectProperty ;
+    rdfs:label "context"@en ;
+    rdfs:comment "context property" ;
+    rdfs:domain ges:Environment ;
+    rdfs:range ges:Context .
+
+ges:date a owl:ObjectProperty ;
+    rdfs:label "date"@en ;
+    rdfs:comment "date property" ;
+    rdfs:domain ges:Synth ;
+    rdfs:range dc:date .
+
+ges:defname a owl:ObjectProperty ;
+    rdfs:label "defname"@en ;
+    rdfs:comment "defname property" ;
+    rdfs:domain ges:Synth ;
+    rdfs:range xsd:string .
+
+ges:environment a owl:ObjectProperty ;
+    rdfs:label "environment"@en ;
+    rdfs:comment "environment property" ;
+    rdfs:domain ges:Synth ;
+    rdfs:range ges:Environment .
+
+ges:error a owl:ObjectProperty ;
+    rdfs:label "error"@en ;
+    rdfs:comment "error property" ;
+    rdfs:domain afo:AudioFeature ;
+    rdfs:range ges:Error .
+
+ges:extra_domains a owl:ObjectProperty ;
+    rdfs:label "extra_domains"@en ;
+    rdfs:comment "extra_domains property" ;
+    rdfs:domain ges:Parameters ;
+    rdfs:range rdf:Seq .
+
+ges:features a owl:ObjectProperty ;
+    rdfs:label "features"@en ;
+    rdfs:comment "features property" ;
+    rdfs:domain ges:Synth ;
+    rdfs:range rdf:Dictionary .
+
+ges:flatness a owl:ObjectProperty ;
+    rdfs:label "flatness"@en ;
+    rdfs:comment "flatness property" ;
+    rdfs:domain afo:AudioFeature ;
+    rdfs:range afv:SpectralFlatness .
+
+ges:generation a owl:ObjectProperty ;
+    rdfs:label "generation"@en ;
+    rdfs:comment "generation property" ;
+    rdfs:domain ges:Synth ;
+    rdfs:range xsd:integer .
+
+ges:genome a owl:ObjectProperty ;
+    rdfs:label "genome"@en ;
+    rdfs:comment "genome property" ;
+    rdfs:domain ges:Parameters,
+        ges:Synth ;
+    rdfs:range rdf:Seq .
+
+ges:guid a owl:ObjectProperty ;
+    rdfs:label "guid"@en ;
+    rdfs:comment "guid property" ;
+    rdfs:domain ges:Synth ;
+    rdfs:range xsd:string .
+
+ges:head_size a owl:ObjectProperty ;
+    rdfs:label "head_size"@en ;
+    rdfs:comment "head_size property" ;
+    rdfs:domain ges:Environment ;
+    rdfs:range xsd:integer .
+
+ges:linker a owl:ObjectProperty ;
+    rdfs:label "linker"@en ;
+    rdfs:comment "linker property" ;
+    rdfs:domain ges:Environment ;
+    rdfs:range ges:Function .
+
+ges:literals a owl:ObjectProperty ;
+    rdfs:label "literals"@en ;
+    rdfs:comment "literals property" ;
+    rdfs:domain ges:Parameters ;
+    rdfs:range rdf:Dictionary .
+
+ges:maximum_value a owl:ObjectProperty ;
+    rdfs:label "maximum_value"@en ;
+    rdfs:comment "maximum_value property" ;
+    rdfs:domain ges:ControlSpec ;
+    rdfs:range xsd:float .
+
+ges:mean a owl:ObjectProperty ;
+    rdfs:label "mean"@en ;
+    rdfs:comment "mean property" ;
+    rdfs:domain afo:AudioFeature ;
+    rdfs:range afv:Mean .
+
+ges:methods a owl:ObjectProperty ;
+    rdfs:label "methods"@en ;
+    rdfs:comment "methods property" ;
+    rdfs:domain ges:Environment ;
+    rdfs:range rdf:Seq .
+
+ges:mfcc a owl:ObjectProperty ;
+    rdfs:label "mfcc"@en ;
+    rdfs:comment "mfcc property" ;
+    rdfs:domain afo:AudioFeature ;
+    rdfs:range afv:MelscaleFrequencyCepstralCoefficients .
+
+ges:minimum_value a owl:ObjectProperty ;
+    rdfs:label "minimum_value"@en ;
+    rdfs:comment "minimum_value property" ;
+    rdfs:domain ges:ControlSpec ;
+    rdfs:range xsd:float .
+
+ges:name a owl:ObjectProperty ;
+    rdfs:label "name"@en ;
+    rdfs:comment "name property" ;
+    rdfs:domain ges:Function ;
+    rdfs:range xsd:string .
+
+ges:number_of_coefficients a owl:ObjectProperty ;
+    rdfs:label "number_of_coefficients"@en ;
+    rdfs:comment "number_of_coefficients property" ;
+    rdfs:domain afv:MelscaleFrequencyCepstralCoefficients ;
+    rdfs:range xsd:integer .
+
+ges:number_of_frames a owl:ObjectProperty ;
+    rdfs:label "number_of_frames"@en ;
+    rdfs:comment "number_of_frames property" ;
+    rdfs:domain afv:MelscaleFrequencyCepstralCoefficients ;
+    rdfs:range xsd:integer .
+
+ges:number_of_genes a owl:ObjectProperty ;
+    rdfs:label "number_of_genes"@en ;
+    rdfs:comment "number_of_genes property" ;
+    rdfs:domain ges:Environment ;
+    rdfs:range xsd:integer .
+
+ges:os_name a owl:ObjectProperty ;
+    rdfs:label "os_name"@en ;
+    rdfs:comment "os_name property" ;
+    rdfs:domain ges:System ;
+    rdfs:range xsd:string .
+
+ges:std_dev a owl:ObjectProperty ;
+    rdfs:label "std_dev"@en ;
+    rdfs:comment "std_dev property" ;
+    rdfs:domain afo:AudioFeature ;
+    rdfs:range afv:StandardDeviation .
+
+ges:sysLinux a ges:SystemType .
+
+ges:sysMac a ges:SystemType .
+
+ges:sysWin a ges:SystemType .
+
+ges:system a owl:ObjectProperty ;
+    rdfs:label "system"@en ;
+    rdfs:comment "system property" ;
+    rdfs:domain ges:Context ;
+    rdfs:range ges:System .
+
+ges:terminals a owl:ObjectProperty ;
+    rdfs:label "terminals"@en ;
+    rdfs:comment "terminals property" ;
+    rdfs:domain ges:Environment ;
+    rdfs:range rdf:Seq .
+
+ges:type a owl:ObjectProperty ;
+    rdfs:label "type"@en ;
+    rdfs:comment "type property" ;
+    rdfs:domain ges:System ;
+    rdfs:range ges:SystemType .
+
+ges:version a owl:ObjectProperty ;
+    rdfs:label "version"@en ;
+    rdfs:comment "version property" ;
+    rdfs:domain ges:System ;
+    rdfs:range xsd:string .
+
+ges:warp a owl:ObjectProperty ;
+    rdfs:label "warp"@en ;
+    rdfs:comment "warp property" ;
+    rdfs:domain ges:ControlSpec ;
+    rdfs:range xsd:string .
+
+ges:Context a owl:Class ;
+    rdfs:label "Context"@en ;
+    rdfs:comment "context of the gene expression synthesis environment" .
+
+ges:ControlSpec a owl:Class ;
+    rdfs:label "ControlSpec"@en ;
+    rdfs:comment "a GES synth argument control spec" .
+
+ges:Function a owl:Class ;
+    rdfs:label "Function"@en ;
+    rdfs:comment "a SuperCollider function" .
+
+ges:Parameters a owl:Class ;
+    rdfs:label "Parameters"@en ;
+    rdfs:comment "GES synth parameters" .
+
+ges:System a owl:Class ;
+    rdfs:label "System"@en ;
+    rdfs:comment "operating system" .
+
+ges:Environment a owl:Class ;
+    rdfs:label "Environment"@en ;
+    rdfs:comment "a GES environment" .
+
+ges:Synth a owl:Class ;
+    rdfs:label "Synth"@en ;
+    rdfs:comment "a GES synth" .
+

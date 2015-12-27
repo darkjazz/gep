@@ -4,18 +4,20 @@
 
 // if views have been updated
 //~player.loader.putViewsFromFile
+150601
 
 
+~player.getDefNamesByDate("150601")
 
-~player.getDefNamesByDate("141212")
+~player.getDefNamesByDateRange("150601", "150604")
 
-~player.getDefNamesByDateRange("141105", "141107")
+~player.getDefNamesByHeader(12, 3)
 
-~player.getDefNamesByHeader(24, 1)
+~player.data
 
+~player.defnames.includes('gep_gen005_056_150602_171115')
 
-
-~player.defnames.size
+.size
 
 ~decoder.start
 
@@ -28,7 +30,7 @@
 ~player.setFoa('focus', 1.0)
 
 
-~ind = 177;
+~ind = 3;
 ~player.play(~ind, 0, 'zoom', 0)
 
 ~player.set(~ind, 0.2)

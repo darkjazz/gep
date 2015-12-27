@@ -37,8 +37,8 @@
 		},
 
 		"playerDataByDefName": {
-			"map": "function(doc) { 
-				emit (doc.defname, [doc.args.literals, doc.headsize, doc.numgenes, doc.code, doc.terminals, doc.linker]); 
+			"map": "function(doc) {
+				emit (doc.defname, [doc.args.literals, doc.headsize, doc.numgenes, doc.code, doc.terminals, doc.linker]);
 			}"
 		},
 

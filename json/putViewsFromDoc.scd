@@ -1,3 +1,3 @@
-~db = CouchDB(NetAddr("127.0.0.1", 5984), "ges_00")
+~db = CouchDB(NetAddr("127.0.0.1", 5984), "ges_ld_00")
 
-~db.putViewsFromDoc("/Users/alo/SuperCollider/gep/json/views_00.js")
+~db.putViewsFromDoc("/Users/alo/dev/gep/json/views_02_ld.js")
