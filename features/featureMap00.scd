@@ -7,6 +7,8 @@
 
 ~features = ~result.interpret
 
+~features.rows.size
+
 ~nclusters = (~features.rows.size * 0.5).sqrt.asInt;
 
 ~kmeans = KMeans(~nclusters)
@@ -69,7 +71,7 @@
 			5, 5
 		));
 
-		Color.black.set;
+		Color.white.set;
 		~kmeans.centroids.do({|cent|
 			Pen.strokeOval(Rect(
 				cent[0].linlin(~limits.dim0.lo, ~limits.dim0.hi, 0.0, 1.0) * 500,

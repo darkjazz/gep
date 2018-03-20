@@ -1,30 +1,23 @@
 ~loader = JsonLDLoader("ges_ld_00")
 
-~features = ~loader.db.get("allValidFeatures")
+~features = ~loader.db.getParsed("allValidFeatures")
 
-~result = ~features.replace(${.asString, $(.asString).replace($}.asString, $).asString).replace("\n", "").replace("\"", "'")
-
-"finished..".postln
-
-~features = ~result.interpret
-
-
-~nclusters = (~features.rows.size * 0.5).sqrt.asInt;
+~nclusters = (~features["rows"].size * 0.5).sqrt.asInt;
 
 ~kmeans = KMeans(~nclusters)
 
+~features["rows"].first["value"]["ges:mfcc"]["ges:std_dev"]
 
-
-~coefs = ~features.rows.collect({|row| row['value']['ges:mfcc']['ges:mean'] })
-
+~coefs = ~features["rows"].collect({|row|
+	row["value"]["ges:mfcc"]["ges:mean"].collect(_.asFloat)
+	++ row["value"]["ges:mfcc"]["ges:std_dev"].collect(_.asFloat)
+})
 
 ~coefs.do({|coef|
 	~kmeans.add(coef.keep(2))
 })
 
 ~kmeans.update
-
-
 
 ~features.rows[~clusterIndices.first].key
 
@@ -54,6 +47,7 @@
 	~findNearestInCluster.(num)
 })
 
+Atk
 
 ~decoder = FoaDecoder(decoderType: 'stereo')
 
