@@ -9,7 +9,7 @@
 	)
 );
 
-~ugens = [ LFSaw, Crackle, SinOsc, LFTri, Dust2, LFPulse, Pulse, Impulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Blip, Saw, PMOsc];
+~ugens = [ LFSaw, Crackle, SinOsc, LFTri, Dust2, LFPulse, Pulse, Impulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Blip, Saw, PMOsc, Softclip, Distort, Tanh ];
 
 ~ev.initializeRandomPopulation
 )
@@ -40,7 +40,7 @@
 
 ~player.stop
 
-~indices = [ 4, 10, 15, 26, 45, 52, 62, 76, 84, 92, 104, 122, 127, 128, 136, 137, 142, 159, 163, 178, 188, 240, 241, 251 ]
+~indices = [ 5, 14, 35, 41, 116, 133, 141, 150, 156, 161, 198, 204, 228 ]
 
 ~ev.save(~indices, true, 11, true)
 

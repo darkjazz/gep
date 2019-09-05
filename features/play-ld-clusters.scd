@@ -36,7 +36,6 @@
 }
 
 
-
 (
 ~assignments.keysValuesDo({|key, val|
 	var sim = ~cosineSimilarity.(~coefs[key], ~kmeans.centroids[val['cluster']]);

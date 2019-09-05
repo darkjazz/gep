@@ -28,4 +28,4 @@ class TagSearch:
         for sound in results:
             print sound.name, sound.url, sound.tags
 
-TagSearch().run()
+# TagSearch().run()
