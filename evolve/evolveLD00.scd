@@ -26,9 +26,11 @@
 
 )
 
+Delay
+
 ~ev.extractTargetFeatures("/Users/alo/snd/gep/atak.aiff")
 
-
+SinO
 
 ~ev.defineFitnessFunction
 
@@ -44,7 +46,7 @@
 
 ~gep.drawCompare(0, 1)
 
-~gep.drawUGenTree(0, ~ugens);
+~gep.drawUGenTree(3, ~ugens);
 ~gep.drawUGenTree(28, ~ugens);
 
 ~defs[2].name

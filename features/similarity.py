@@ -5,17 +5,14 @@ import hdbscan as hd
 import progressbar as pb
 from sklearn.manifold import TSNE
 
-class Similarity:
-	def __init__(self):
-		self.nlp = en_core_web_lg.load()
-
-class TagSimilarity(Similarity):
-	def __init__(self):
-		super().__init__()
+class TagSimilarity:
+	def __init__(self, model='md', include_pos=None):
 		self.data = TagData()
+		self.model = model
+		self.include_pos = include_pos
 
 	def calculate_matrix(self):
-		self.data.load(self.nlp)
+		self.data.load(self.model, self.include_pos)
 		self.size = len(self.data.tags)
 		self.similarity_matrix = np.zeros((self.size, self.size))
 		self.names = list(self.data.tags.keys())
@@ -41,7 +38,7 @@ class TagSimilarity(Similarity):
 	def make_clusters(self, min_size=17):
 		self.clusterer = hd.HDBSCAN(min_cluster_size=min_size, metric='euclidean',
 			p=1, min_samples=1, cluster_selection_method='leaf', leaf_size=min_size*2)
-		self.clusters = self.clusterer.fit(self.coordinates)
+		self.clusterer.fit(self.coordinates)
 		# self.soft_clusters = hd.all_points_membership_vectors(self.clusterer)
 		print("finished making clusters ..")
 
@@ -67,9 +64,8 @@ class TagSimilarity(Similarity):
 		inverted = np.array(self.tag_matrix).T
 		sets = [ len(set(_a)) for _a in inverted ]
 
-class FeatureSimilarity(Similarity):
+class FeatureSimilarity:
 	def __init__(self):
-		super().__init__()
 		self.data = FeatureData()
 
 	def make_clusters(self, min_size=5, use_soft=True):
@@ -81,3 +77,12 @@ class FeatureSimilarity(Similarity):
 		if use_soft:
 			self.soft_clusters = hd.all_points_membership_vectors(self.clusterer)
 		print("finished making clusters ..")
+
+class AudioSimilarity:
+	def __init__(self):
+		sefl.data = TagData()
+
+
+class GenotypeSimilarity:
+	def __init__(self):
+		sefl.data = TagData()	

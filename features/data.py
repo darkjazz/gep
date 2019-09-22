@@ -1,7 +1,7 @@
 import couchdb
 import numpy as np
 import progressbar as pb
-import en_core_web_lg
+import spacy
 
 class TagData:
 	def __init__(self):
@@ -10,19 +10,21 @@ class TagData:
 		self.dict_db = srv['ges-synth-dict']
 		self.view = 'views/tags_by_name'
 
-	def load(self, nlp=None):
-		if not nlp:
-			self.nlp = en_core_web_lg.load()
-		else:
-			self.nlp = nlp
+	#shuffle synths
+	def load(self, model='lg', include_pos=None):
+		self.nlp = spacy.load('en_core_web_%s' % model)
 		self.tags = { }
 		self.unique_tags = [ ]
 		bar = pb.ProgressBar(max_value=len(self.db.view(self.view)))
 		for _i, row in enumerate(self.db.view(self.view)):
-			_tokens = self.nlp(" ".join([ _w.lower() for _w in row.value ]))
-			if _tokens.vector_norm:
-				self.tags[row.key] = _tokens
-				[ self.unique_tags.append(_t.text) for _t in _tokens if not _t.text in self.unique_tags ]
+			# _valid_tags = []
+			# for _tag in row.value:
+			# 	_tokens = self.nlp(_tag.lower().replace("-", " "))
+			# 	for _token in _tokens:
+			# 		if _token.has_vector and (include_pos and _token.pos_ in include_pos):
+			# 			_valid_tags.append(_token.text)
+			self.tags[row.key] = self.nlp(" ".join([ _w.lower().replace("-", " ") for _w in row.value ]))
+			[ self.unique_tags.append(_t.text) for _t in self.tags[row.key] if not _t.text in self.unique_tags ]
 			bar.update(_i)
 		bar.finish()
 		print('loaded tokens for %d synths' % len(self.tags))

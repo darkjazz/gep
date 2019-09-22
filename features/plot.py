@@ -60,4 +60,23 @@ class SimilarityPlotter:
 		plt.scatter(*self.emb.T,s=17, linewidth=0, c=cluster_colors, alpha=0.75)
 		plt.show()
 
+def plot_tag_clusters(sim, count):
+	color_palette = sb.color_palette('Paired', max(sim.clusterer.labels_) + 1)
+	cluster_colors = [ ]
+	for _cluster in sim.clusterer.labels_:
+		if _cluster == -1:
+			cluster_colors.append((0.6, 0.6, 0.6))
+		else:
+			cluster_colors.append(color_palette[_cluster])
+	cluster_labels = [ ]
+	for _cluster in sim.cluster_tags:
+		_label = " ".join([ _tag for _tag, _count in _cluster.items() if _count == count ][:3])
+		cluster_labels.append(_label)
+	plt.scatter(*sim.coordinates.T,s=17, linewidth=0, c=cluster_colors, alpha=0.6)
+	indexes = list(sim.clusterer.labels_)
+	for _i, _label in enumerate(cluster_labels):
+		_coords = sim.coordinates[indexes.index(_i)]
+		plt.annotate(_label, (_coords[0], _coords[1]))
+	plt.show()
+
 # GesPlotter().plot('gep_gen000_010_151007_165550')
