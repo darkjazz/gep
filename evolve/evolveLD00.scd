@@ -28,6 +28,12 @@
 
 Delay
 
+
+~buf = Buffer.read(s, "/Users/alo/snd/gep/atak.aiff")
+
+
+{PlayBuf.ar(1, ~buf.bufnum, doneAction: 2)}.play
+
 ~ev.extractTargetFeatures("/Users/alo/snd/gep/atak.aiff")
 
 SinO
@@ -46,7 +52,7 @@ SinO
 
 ~gep.drawCompare(0, 1)
 
-~gep.drawUGenTree(3, ~ugens);
+~gep.drawUGenTree(7, ~ugens);
 ~gep.drawUGenTree(28, ~ugens);
 
 ~defs[2].name
@@ -57,15 +63,18 @@ SinO
 
 ~ev.play
 
-~ev.playOne(0)
+~ev.playOne(16)
 
+Ndef('rerout', {
+	Out.ar(2, In.ar(0, 2))
+}).play
 
 ~indices = [6]
 
 ~ev.save(~indices, false, 8)
 
 
-
+s.scope(2)
 
 
 ~gep.chromosomes[0].asUgenExpressionTree.draw(~ugens, ~gep.colors)

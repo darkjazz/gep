@@ -2,6 +2,28 @@ import couchdb
 import numpy as np
 import progressbar as pb
 import spacy
+from pymongo import MongoClient
+
+conn_str = "mongodb+srv://darkjazz:{pwd}@gep.2uoeb.mongodb.net/{db_name}?retryWrites=true&w=majority"
+
+class MongoCloud:
+	def __init__(self):
+		self.cli = MongoClient(conn_str.format(pwd="5yNt43sIz3", db_name="gep"))
+		self.db = self.cli.gep
+		self.coll = self.db.ges_ld_00
+		self.couch = couchdb.Server()["ges_ld_00"]
+
+	def sync(self):
+		synced = 0
+		prg = pb.ProgressBar(max_value=len(self.couch))
+		for _i, _id in enumerate(self.couch):
+			if self.coll.count_documents({"_id": _id}) == 0:
+				_doc = self.couch[_id]
+				self.coll.insert_one(_doc)
+				synced += 1
+			prg.update(_i)
+		prg.finish()
+		print("synced {synced} synths to cloud".format(synced=synced))
 
 class TagData:
 	def __init__(self):

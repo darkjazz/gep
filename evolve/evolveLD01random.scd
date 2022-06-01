@@ -1,46 +1,52 @@
 (
 ~ev = EvolverEnvir(
 	(
-		populationSize: 256, numgenes: 5, headsize: 17, ncoef: 20, rate: 20, dbname: "ges_ld_00",
-		mutationRate: 0.1, recombinationRate: 1.0, transpositionRate: 0.25,
-		rootTranspositionRate: 0.1, geneRecombinationRate: 0.1, geneTranspositionRate: 0.0,
+		populationSize: 307, numgenes: 3, headsize: 57, ncoef: 20, rate: 20, dbname: "ges_ld_00",
+		mutationRate: 0.25, recombinationRate: 1.0, transpositionRate: 0.25,
+		rootTranspositionRate: 0.1, geneRecombinationRate: 0.2, geneTranspositionRate: 0.2,
 		linker: AbstractFunction.methods.select({|meth| meth.name == '*' }).first,
 		numterminals: 13, recordPath: "/Users/alo/snd/evolver/"
 	)
 );
 
-~ugens = [ LFSaw, Crackle, SinOsc, LFTri, Dust2, LFPulse, Pulse, Impulse, LFNoise1, LFNoise2, LFNoise0, SyncSaw, Blip, Saw, PMOsc, Softclip, Distort, Tanh ];
+~ugens = [ SinOsc, Saw, LFSaw, VarSaw, LFTri, Pulse, LFPulse, LFNoise0, LFPar, Logist0, LFNoise1, LFNoise2, Formant, Blip, PMOsc, SyncSaw, Dust2 ];
 
-~ev.initializeRandomPopulation
+~ev.initializeRandomPopulation;
+~ev.defineFitnessFunction;
+~ev.extractTargetFeatures("/Users/alo/snd/gep/gepsynth06.aif")
 )
 
-~ev.extractTargetFeatures("/Users/alo/snd/gep/gepsynth01.aif")
 
-
-~ev.defineFitnessFunction
 
 ~gep.updateScores
 
 
-~gep.drawDistanceMatrix(15)
+~gep.drawDistanceMatrix(30)
 
 ~gep.draw
 
 ~gep.drawCompare(0, 1)
 
+~gep.drawScroll
 
 
-~gep.chromosomes[0].asUgenExpressionTree.draw(~ugens, ~gep.colors)
+~ev.playOne(299)
 
-~gep.chromosomes[0]
 
-~th = 7.0
+~mostRecentSavePath
+
+gepAnalyzer
+
+~gep.drawUGenTree(3, ~ugens);
+
+
+~th = 7
 
 ~ev.play
 
 ~player.stop
 
-~indices = [ 5, 14, 35, 41, 116, 133, 141, 150, 156, 161, 198, 204, 228 ]
+~indices = [  ]
 
 ~ev.save(~indices, true, 11, true)
 
@@ -63,3 +69,8 @@ s.stopRecording
 Server.killAll
 s.boot
 
+s.queryAllNodes
+
+122
+
+s.sendMsg("/n_free", 3030)
