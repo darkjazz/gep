@@ -16,10 +16,12 @@ class MongoCloud:
 	def sync(self):
 		synced = 0
 		prg = pb.ProgressBar(max_value=len(self.couch))
+		self.ids = []
 		for _i, _id in enumerate(self.couch):
 			if self.coll.count_documents({"_id": _id}) == 0:
 				_doc = self.couch[_id]
-				self.coll.insert_one(_doc)
+				_id = self.coll.insert_one(_doc)
+				self.ids.append(_id)
 				synced += 1
 			prg.update(_i)
 		prg.finish()

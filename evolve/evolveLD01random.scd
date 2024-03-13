@@ -1,7 +1,7 @@
 (
 ~ev = EvolverEnvir(
 	(
-		populationSize: 307, numgenes: 3, headsize: 57, ncoef: 20, rate: 20, dbname: "ges_ld_00",
+		populationSize: 37, numgenes: 3, headsize: 57, ncoef: 20, rate: 20, dbname: "ges_ld_00",
 		mutationRate: 0.25, recombinationRate: 1.0, transpositionRate: 0.25,
 		rootTranspositionRate: 0.1, geneRecombinationRate: 0.2, geneTranspositionRate: 0.2,
 		linker: AbstractFunction.methods.select({|meth| meth.name == '*' }).first,
@@ -46,7 +46,7 @@ gepAnalyzer
 
 ~player.stop
 
-~indices = [  ]
+~indices = []
 
 ~ev.save(~indices, true, 11, true)
 
@@ -71,6 +71,10 @@ s.boot
 
 s.queryAllNodes
 
-122
+
+
+380 / 2
+
+
 
 s.sendMsg("/n_free", 3030)

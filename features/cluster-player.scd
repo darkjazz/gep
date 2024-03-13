@@ -1,7 +1,6 @@
-~clst = ClusterPlayer("160801")
+~clst = ClusterPlayer("200101")
 
-
-380*5
+~clst.loader.results.size
 
 ~clst.startPlayer
 

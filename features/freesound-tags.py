@@ -23,7 +23,7 @@ class TagSearch:
         trgt = "lowlevel.mfcc.mean:" + mfcc_mean + " lowlevel.mfcc.var:" + mfcc_var
         flds = "id,name,url,tags"
         desc = "lowlevel.mfcc.mean"
-        filt = "duration:0 TO 11"
+        filt = "duration:3 TO 33"
         results = self.fs_client.content_based_search(target=trgt, fields=flds, descriptors=desc, filter=filt)
         for sound in results:
             print sound.name, sound.url, sound.tags
