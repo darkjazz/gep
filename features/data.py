@@ -3,12 +3,13 @@ import numpy as np
 import progressbar as pb
 import spacy
 from pymongo import MongoClient
+import ssl
 
 conn_str = "mongodb+srv://darkjazz:{pwd}@gep.2uoeb.mongodb.net/{db_name}?retryWrites=true&w=majority"
 
 class MongoCloud:
 	def __init__(self):
-		self.cli = MongoClient(conn_str.format(pwd="5yNt43sIz3", db_name="gep"))
+		self.cli = MongoClient(conn_str.format(pwd="Q7JHhiDfwuvVFnMV", db_name="gep"))
 		self.db = self.cli.gep
 		self.coll = self.db.ges_ld_00
 		self.couch = couchdb.Server()["ges_ld_00"]

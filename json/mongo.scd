@@ -70,7 +70,19 @@ curl --location --request POST 'https://data.mongodb-api.com/app/data-zolcv/endp
 
 ~docs = ~db.getDefnames(headsize: 31, numgenes: 3);
 
-~docs = ~db.getDocuments("231101", "231201", 128)
+~data = ~db.getDocuments("231101", "231201", limit: 128)
+
+~data = ~db.getDocuments(headsize: 57, numgenes: 3, limit: 7)
+
+~data.first.args[1]
+
+~data.collect({|dt| dt.code.first })
+
+UGEP
+
+~trm.maxItem
+
+~data.first.linker
 
 ~docs.size
 
