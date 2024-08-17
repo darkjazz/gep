@@ -7,6 +7,8 @@ import ssl
 from smlib.db import connect_pg, execute_query, commit_query
 from psycopg2.extras import Json
 import argparse
+import glob
+
 conn_str = "mongodb+srv://darkjazz:{pwd}@gep.2uoeb.mongodb.net/{db_name}?retryWrites=true&w=majority"
 
 feature_query = """
@@ -52,6 +54,10 @@ select_features_by_defnames = """
 select defname, {features} from ges.audio_features where defname in ({defnames})
 """
 
+select_melbands = """
+select melbands from gtzan.melbands128 where name = '{name}'
+"""
+
 select_bpm = """
 with rhythm as (
 	select defname,
@@ -69,7 +75,12 @@ class MongoCloud:
 		self.cli = MongoClient(conn_str.format(pwd="Q7JHhiDfwuvVFnMV", db_name="gep"))
 		self.db = self.cli.gep
 		self.coll = self.db.ges_ld_00
-		self.couch = couchdb.Server()["ges_ld_00"]
+		try:
+			self.couch = couchdb.Server()["ges_ld_00"]
+		except Exception as e:
+			print("WARNING! cannot connect to couchdb")
+
+	def sync(self):
 		synced = 0
 		prg = pb.ProgressBar(max_value=len(self.couch))
 		self.ids = []
@@ -83,12 +94,29 @@ class MongoCloud:
 		prg.finish()
 		print("synced {synced} synths to cloud".format(synced=synced))
 
+	def get_root_ugen_names(self):
+		self.root_names = {}
+		prg = pb.ProgressBar(max_value=self.coll.count_documents({}))
+		for _i, _synth in enumerate(self.coll.find({})):
+			try:
+				_genes = _synth["ges:environment"]["ges:numgenes"]
+				_genome = _synth["ges:genome"]
+				self.root_names[_synth["ges:defname"]] = [ c for i, c in
+					enumerate(_genome) if i%int(len(_genome)/_genes)==0
+				]
+			except Exception as e:
+				print("ERROR", _synth)
+			prg.update(_i)
+		prg.finish()
+		with open("train_ugen_tags.json", "w") as f:
+			json.dump(self.root_names, f)
+
 class TagData:
 	def __init__(self):
 		self.pg = Postgres()
 		self.dir = "/home/darkjazz/dev/av/gep/features/"
 		self.tags_path = os.path.join(self.dir, "tags.list")
-		self.train_data_path = os.path.join(self.dir, "train_tags.json")
+		self.train_data_path = os.path.join(self.dir, "train_ugen_tags.json")
 
 	#shuffle synths
 	# def load(self, model='lg', include_pos=None):
@@ -210,6 +238,24 @@ class FeatureData:
 				self.features[_name] = _ftr[0][0][:self.num_frames]
 			bar.update(_i)
 		bar.finish()
+		# self.prepare()
+		print('loaded features for %d synths' % len(self.features))
+
+	def load_gtzan(self, basedir="/home/darkjazz/io/genres"):
+		self.features = { }
+		self.tags = TagData()
+		self.tags.data = { }
+		bar = pb.ProgressBar(max_value=1000)
+		i = 0
+		for dir in glob.glob(os.path.join(basedir, "*")):
+			for path in glob.glob(os.path.join(dir, "*")):
+				name = os.path.basename(path)
+				ftr = self.pg.get_gtzan_frames(name)[0][0]
+				self.features[name] = ftr
+				self.tags.data[name] = [ dir ]
+				bar.update(i)
+				i += 1
+		bar.finish()
 		self.prepare()
 		print('loaded features for %d synths' % len(self.features))
 
@@ -219,7 +265,7 @@ class FeatureData:
 		self.err = []
 		for _name in self.tags.data:
 			if _name in self.features:
-				_ftr = self.features[_name]
+				_ftr = [ band[:1290] for band in self.features[_name] ]
 				for _tag in self.tags.data[_name]:
 					self.x.append(_ftr)
 					self.y.append(_tag)
@@ -287,6 +333,20 @@ class Postgres:
 
 	def get_frames(self, feature, defname):
 		self.query = feature_query.format(feature=feature, defname=defname)
+		self.conn = None
+		self.result = []
+		try:
+			self.conn = connect_pg(self.config)
+			colnames, self.result = execute_query(self.conn, self.query)
+		except Exception as e:
+			print(str(e))
+		finally:
+			if self.conn:
+				self.conn.close()
+			return self.result
+
+	def get_gtzan_frames(self, name):
+		self.query = select_melbands.format(name=name)
 		self.conn = None
 		self.result = []
 		try:
