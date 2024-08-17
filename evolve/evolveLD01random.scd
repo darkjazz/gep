@@ -9,12 +9,13 @@
 	)
 );
 
-~ugens = [ SinOsc, Saw, LFSaw, VarSaw, LFTri, Pulse, LFPulse, LFNoise0, LFPar, Logist0, LFNoise1, LFNoise2, Formant, Blip, PMOsc, SyncSaw, Dust2 ];
+~ugens = [ SinOsc, Saw, LFSaw, VarSaw, LFTri, Pulse, LFPulse, LFNoise0, LFPar, LFNoise1, LFNoise2, Formant, Blip, PMOsc, SyncSaw, Dust2 ];
 
 ~ev.initializeRandomPopulation;
 ~ev.defineFitnessFunction;
-~ev.extractTargetFeatures("/Users/alo/snd/gep/gepsynth06.aif")
+~ev.extractTargetFeatures("/home/darkjazz/snd/sparsematrix/ev_55.aif")
 )
+
 
 
 
